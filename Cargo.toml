@@ -5,6 +5,24 @@
 	authors = [ "Naja Melan <najamelan@autistici.org>" ]
 	edition = "2018"
 
+
+[lib]
+
+	name = "libekke"
+	path = "src/libekke.rs"
+
+
+[[bin]]
+
+	name = "ekke"
+	path = "src/main.rs"
+
+
 [dependencies]
 
-	"ekke_io" = { path = "../ekke_io" }
+	ekke_io = { path = "../ekke_io" }
+
+	actix   = ">= 0.7.9"
+	failure = ">= 0.1.5"
+	futures = ">= 0.1.25"
+
