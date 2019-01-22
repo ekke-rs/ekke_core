@@ -1,0 +1,10 @@
+[package]
+
+	name    = "ekke_core"
+	version = "0.1.0"
+	authors = [ "Naja Melan <najamelan@autistici.org>" ]
+	edition = "2018"
+
+[dependencies]
+
+	"ekke_io" = { path = "../ekke_io" }
