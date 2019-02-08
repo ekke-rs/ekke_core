@@ -1,15 +1,17 @@
+cargo-features = [ "default-run" ]
+
 [package]
 
 	name    = "ekke_core"
 	version = "0.1.0"
 	authors = [ "Naja Melan <najamelan@autistici.org>" ]
 	edition = "2018"
-
+	default-run = "ekke"
 
 [lib]
 
 	name = "libekke"
-	path = "src/libekke.rs"
+	path = "src/libekke/libekke.rs"
 
 
 [[bin]]
@@ -20,9 +22,27 @@
 
 [dependencies]
 
-	ekke_io = { path = "../ekke_io" }
+	ekke_io           = { path = "../ekke_io" }
 
-	actix   = ">= 0.7.9"
-	failure = ">= 0.1.5"
-	futures = ">= 0.1.25"
+	actix             = "~0.7.9"
+	failure           = "~0.1.5"
+
+	serde             = "~1.0.87"
+	serde_derive      = "~1.0.87"
+	serde_cbor        = "~0.9.0"
+
+	tokio-async-await = "~0.1.5"
+	tokio-uds         = "~0.2.5"
+
+	[dependencies.futures-preview]
+
+		default-features = false
+		version          = "0.3.0-alpha.12"
+
+	[dependencies.futures-util-preview]
+
+		default-features = false
+		features         = ["tokio-compat"]
+		version          = "~0.3.0-alpha.12"
+
 
