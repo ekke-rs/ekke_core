@@ -1,35 +1,36 @@
-use tokio_uds::{ UnixStream, UnixListener };
-use futures_util::{future::FutureExt, try_future::TryFutureExt};
-
-use tokio_async_await::await;
-use tokio_async_await::stream::StreamExt;
-
-use actix::prelude::*;
-use futures_util::{join};
-use crate::
-{
-	  Dispatcher
-	, RegisterService
-	, Service
-	, EkkeError
-};
-
-use ekke_io::{ IpcPeer, IpcMessage };
-
 use std::
 {
 	  process::Command
 	, str
-	, collections::HashMap
 };
 
-use serde_derive::{Serialize, Deserialize};
+use actix             :: { prelude::*                                        };
+use futures_util      :: { future::FutureExt, try_future::TryFutureExt, join };
+use slog              :: { Logger, info, o                                   };
 
-#[ derive( Debug ) ]
+use tokio_async_await :: { await            , stream::StreamExt              };
+use tokio_uds         :: { UnixStream       , UnixListener                   };
+
+use ekke_io           :: { IpcPeer                                           };
+use crate::
+{
+	  Dispatcher
+	, RegisterService
+	, IpcHandler
+	, EkkeError
+};
+
+
+
+mod register_application;
+pub use register_application::*;
+
+
+#[ derive( Debug, Clone ) ]
 //
 pub struct Ekke
 {
-
+	pub log: Logger
 }
 
 impl Actor for Ekke
@@ -41,12 +42,17 @@ impl Actor for Ekke
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
-		let our_address = ctx.address().clone();
 
+
+		let our_address = ctx.address().clone();
+		let log = self.log.clone();
 
 		let program = async move
 		{
-			println!( "Ekke: Starting up" );
+
+			info!( log, "Ekke Starting up" );
+
+			// panic!( "Everyting is on fire" );
 
 			// TODO: use abstract socket
 			//
@@ -71,12 +77,12 @@ impl Actor for Ekke
 			;*/
 
 
-			let dispatcher = Dispatcher { services: HashMap::new() }.start();
+			let dispatcher = Dispatcher::new( log.new( o!( "Actor" => "Dispatcher" ) ) ).start();
 
 			await!( dispatcher.send( RegisterService
 			{
 				  name   : "RegisterApplication".into()
-				, service: Service::RegisterApplication( our_address )
+				, service: IpcHandler::RegisterApplication( our_address )
 
 			})).expect( "MailboxError" );
 
@@ -84,13 +90,18 @@ impl Actor for Ekke
 			println!( "Ekke: Starting IpcPeer" );
 
 
-			let fb = peer( SOCK_ADDRB, dispatcher.clone() );
-			let fc = peer( SOCK_ADDRC, dispatcher.clone() );
+			let fb = Self::peer( SOCK_ADDRB, dispatcher.clone(), &log );
+			let fc = Self::peer( SOCK_ADDRC, dispatcher.clone(), &log );
 
+
+			#[allow(clippy::useless_let_if_seq)]
+			//
+			// TODO: check whether this should be filed as an issue against futures-preview
+			//
 			let ( _ipc_peerb, _ipc_peerc ) = join!( fb, fc );
 
-			Ok(())
 
+			Ok(())
 		};
 
 		Arbiter::spawn( program.boxed().compat() );
@@ -100,61 +111,43 @@ impl Actor for Ekke
 
 
 
-
-pub async fn peer( sock_addr: &str, dispatch: Addr<Dispatcher> ) -> Addr< IpcPeer >
+impl Ekke
 {
-	let connection = await!( bind( sock_addr ) ).expect( "failed to bind socket address");
-
-	IpcPeer::create( |ctx: &mut Context<IpcPeer>| { IpcPeer::new( connection, dispatch.recipient(), ctx.address() ) } )
-
-	// IpcPeer::new( connection, dispatch )
-}
-
-
-// We only want one program to connect, so we stop listening after the first stream comes in
-//
-async fn bind( sock_addr: &str ) -> Result< UnixStream, failure::Error >
-{
-	let _ = std::fs::remove_file( &sock_addr ); // .context( format!( "Cannot unlink socket address: {:?}", sock_addr ) )?;
-
-	let listener = UnixListener::bind( sock_addr ).expect( "PeerA: Could not bind to socket" );
-	let mut connection = listener.incoming();
-
-	while let Some( income ) = await!( connection.next() )
+	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Dispatcher>, log: &'a Logger ) -> Addr< IpcPeer >
 	{
-		match income
+		let connection = await!( Self::bind( sock_addr ) ).expect( "failed to bind socket address" );
+		let peer_log   = log.new( o!( "Actor" => "IpcPeer" ) );
+
+		IpcPeer::create( |ctx: &mut Context<IpcPeer>|
 		{
-			Ok ( stream ) => return Ok( stream ),
-			Err( _ ) => { eprintln!( "PeerA: Got Invalid Stream" ); continue }
-		};
-	};
+			IpcPeer::new( connection, dispatch.recipient(), ctx.address(), peer_log )
+		})
 
-	Err( EkkeError::NoConnectionsReceived.into() )
-}
-
-
-#[ derive( Debug, Serialize, Deserialize ) ]
-//
-pub struct RegisterApplication
-{
-	pub app_name: String
-}
-
-impl Message for RegisterApplication
-{
-	type Result = IpcMessage;
-}
-
-impl Handler<RegisterApplication> for Ekke
-{
-	type Result = IpcMessage;
-
-	fn handle( &mut self, msg: RegisterApplication, _ctx: &mut Context<Self> ) -> Self::Result
-	{
-		println!( "Ekke: Received app registration for app: {}", msg.app_name );
-
-		IpcMessage{ service: "RegisterAppAck".into(), payload: "Thank you for registering with Ekke.".as_bytes().to_vec() }
+		// IpcPeer::new( connection, dispatch )
 	}
 
+
+	// We only want one program to connect, so we stop listening after the first stream comes in
+	//
+	async fn bind( sock_addr: &str ) -> Result< UnixStream, failure::Error >
+	{
+		let _ = std::fs::remove_file( sock_addr ); // .context( format!( "Cannot unlink socket address: {:?}", sock_addr ) )?;
+
+		let listener = UnixListener::bind( sock_addr ).expect( "PeerA: Could not bind to socket" );
+		let mut connection = listener.incoming();
+
+		while let Some( income ) = await!( connection.next() )
+		{
+			match income
+			{
+				Ok ( stream ) => return Ok( stream ),
+				Err( _ ) => { eprintln!( "PeerA: Got Invalid Stream" ); continue }
+			};
+		};
+
+		Err( EkkeError::NoConnectionsReceived.into() )
+	}
 }
+
+
 

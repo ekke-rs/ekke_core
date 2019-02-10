@@ -1,27 +1,42 @@
-use actix::prelude::*;
-use std::collections::HashMap;
-use crate::{ Ekke, services::RegisterApplication };
-use ekke_io::{ IpcConnTrack, IpcMessage };
-use serde_cbor::from_slice as des;
-use futures_util::{future::FutureExt, try_future::TryFutureExt};
-use tokio_async_await::await;
+use std               :: collections::HashMap                               ;
+
+use actix             :: prelude::*                                         ;
+use futures_util      :: {future::FutureExt, try_future::TryFutureExt}      ;
+use serde_cbor        :: from_slice as des                                  ;
+use slog              :: Logger                                             ;
+use tokio_async_await :: await                                              ;
+
+use crate             :: { Ekke, services::RegisterApplication, EkkeError } ;
+use ekke_io           :: { IpcConnTrack, IpcMessage }                       ;
 
 
+#[macro_use]
+mod dispatch_macros;
+use request_response;
+
+
+#[ derive( Debug, Clone ) ]
+//
 pub struct Dispatcher
 {
-	pub services: HashMap< String, Service >
+	  handlers: HashMap< String, IpcHandler >
+	, log     : Logger
 }
 
 impl Actor for Dispatcher { type Context = Context<Self>; }
 
 
+
 impl Dispatcher
 {
-	fn service_no_handler( name: &str )
+	pub fn new( log: Logger ) -> Self
 	{
-		eprintln!( "No handler registered for service: {}", name );
+		Self { handlers: HashMap::new(), log }
 	}
 
+
+	/// Send an error message back to the peer application over the ipc channel.
+	///
 	fn error_response( error: String, addr: Recipient< IpcMessage > )
 	{
 		Arbiter::spawn( async move
@@ -35,86 +50,80 @@ impl Dispatcher
 }
 
 
+/// Handle incoming IPC messages
+///
 impl Handler<IpcConnTrack> for Dispatcher
 {
 	type Result = ();
 
 
-	#[allow(irrefutable_let_patterns)]
-
+	/// Handle incoming IPC messages
+	///
+	/// Each type of incoming message the application accepts is listed here. We find the
+	/// corresponding actor in our handlers list and forward the message.
+	///
+	/// Two macros are provided to get rid of the boiler plate.
+	///
+	/// `request_response!` will wait for the actor to send an IpcMessage back as response.
+	/// `request_void!`     will forward and not wait for an answer.
+	///
 	fn handle( &mut self, msg: IpcConnTrack, _ctx: &mut Context<Self> ) -> Self::Result
 	{
 		match msg.ipc_msg.service.as_ref()
 		{
-			// RegisterApplication
-			//
-			name @ "RegisterApplication" =>
-			{
-				match self.services.get( name.into() )
-				{
-					Some( service ) =>
-					{
-						if let Service::RegisterApplication( addr ) = service
-						{
-							let de: RegisterApplication = des( &msg.ipc_msg.payload ).expect( "Failed to deserialize into RegisterApplication" );
+			"RegisterApplication" => request_response!( self, msg, RegisterApplication ),
 
-							let addr = addr.clone();
+			_ => Self::error_response
 
-							Arbiter::spawn( async move
-							{
-								let resp = await!( addr.send( de ) ).expect( "MailboxError" );
-
-								await!( msg.ipc_peer.send( resp ) ).expect( "MailboxError" );
-
-								Ok(())
-
-							}.boxed().compat() )
-						}
-					},
-
-					None => Self::service_no_handler( name )
-				}
-			}
-
-			_ => Self::error_response( format!( "Ekke Server received request for unknown service: {:?}", &msg.ipc_msg.service ), msg.ipc_peer )
+					( format!( "Ekke Server received request for unknown service: {:?}", &msg.ipc_msg.service ), msg.ipc_peer )
 		}
 	}
 }
 
 
+/// We need to keep a list of service->actor handler mappings at runtime. This is where services
+/// register.
+///
 impl Handler<RegisterService> for Dispatcher
 {
 	type Result = ();
 
 
+	#[allow(clippy::suspicious_else_formatting)]
+	//
 	fn handle( &mut self, msg: RegisterService, _ctx: &mut Context<Self> ) -> Self::Result
 	{
-		if let Some( service ) = self.services.get( &msg.name )
+		if let Some( service ) = self.handlers.remove( &msg.name )
 		{
-			eprintln!( "Handler for service already registered: {}, ->{:?}", &msg.name, service );
+			panic!( EkkeError::DoubleServiceRegistration( msg.name, service ) );
 		}
 
 		else
 		{
-			self.services.insert( msg.name, msg.service );
+			self.handlers.insert( msg.name, msg.service );
 		}
 	}
 }
 
 
 
-#[ derive( Message ) ]
+#[ derive( Debug, Clone ) ]
 //
 pub struct RegisterService
 {
 	pub name   : String,
-	pub service: Service
+	pub service: IpcHandler
 }
 
+impl Message for RegisterService { type Result = (); }
 
-#[ derive( Debug ) ]
+
+/// Map service names to actor address types.
+///
+#[ derive( Debug, Clone ) ]
 //
-pub enum Service
+pub enum IpcHandler
 {
 	RegisterApplication( Addr< Ekke > )
 }
+

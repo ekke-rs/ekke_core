@@ -1,4 +1,7 @@
-use failure::*;
+use failure:: *              ;
+use crate  :: { IpcHandler } ;
+
+
 
 pub type EkkeResult<T> = std::result::Result<T, failure::Error>;
 
@@ -7,9 +10,9 @@ pub type EkkeResult<T> = std::result::Result<T, failure::Error>;
 //
 pub enum EkkeError
 {
-	#[ fail( display = "Cannot use socket before connecting" ) ]
+	#[ fail( display = "Handler for service already registered: {}, by actor: {:?}", _0, _1 ) ]
 	//
-	UseSocketBeforeConnect,
+	DoubleServiceRegistration( String, IpcHandler ),
 
 	#[ fail( display = "Nobody connected to the socket" ) ]
 	//
