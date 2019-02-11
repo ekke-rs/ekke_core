@@ -5,13 +5,14 @@ use std::
 };
 
 use actix             :: { prelude::*                                        };
+use failure           :: { ResultExt                                         };
 use futures_util      :: { future::FutureExt, try_future::TryFutureExt, join };
 use slog              :: { Logger, info, o                                   };
 
 use tokio_async_await :: { await            , stream::StreamExt              };
 use tokio_uds         :: { UnixStream       , UnixListener                   };
 
-use ekke_io           :: { IpcPeer                                           };
+use ekke_io           :: { IpcPeer          , ResultExtSlog                  };
 use crate::
 {
 	  Dispatcher
@@ -115,7 +116,7 @@ impl Ekke
 {
 	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Dispatcher>, log: &'a Logger ) -> Addr< IpcPeer >
 	{
-		let connection = await!( Self::bind( sock_addr ) ).expect( "failed to bind socket address" );
+		let connection = await!( Self::bind( sock_addr ) ).context( "Failed to receive connections on socket" ).unwraps( log );
 		let peer_log   = log.new( o!( "Actor" => "IpcPeer" ) );
 
 		IpcPeer::create( |ctx: &mut Context<IpcPeer>|
@@ -129,23 +130,29 @@ impl Ekke
 
 	// We only want one program to connect, so we stop listening after the first stream comes in
 	//
-	async fn bind( sock_addr: &str ) -> Result< UnixStream, failure::Error >
+	async fn bind<'a>( sock_addr: &'a str ) -> Result< UnixStream, failure::Error >
 	{
 		let _ = std::fs::remove_file( sock_addr ); // .context( format!( "Cannot unlink socket address: {:?}", sock_addr ) )?;
 
-		let listener = UnixListener::bind( sock_addr ).expect( "PeerA: Could not bind to socket" );
+		let listener = UnixListener::bind( sock_addr )?;
 		let mut connection = listener.incoming();
 
 		while let Some( income ) = await!( connection.next() )
 		{
-			match income
-			{
-				Ok ( stream ) => return Ok( stream ),
-				Err( _ ) => { eprintln!( "PeerA: Got Invalid Stream" ); continue }
-			};
+			// Return has to be here! We want to break from loop and function when we are connected.
+			// We only allow one connection atm. It's not great security, but we only want our child
+			// process to connect to us, so not allowing further connections.
+			//
+			// This does mean that if the connection would drop, child process cannot reconnect but needs to be
+			// given a new socket, which currently is not implemented. That being said, on unix sockets, this
+			// shouldn't be a problem in real life, but this is most certainly temporary code.
+			//
+			// TODO: Make secure ipc channel
+			//
+			return Ok( income? )
 		};
 
-		Err( EkkeError::NoConnectionsReceived.into() )
+		Err( EkkeError::NoConnectionsReceived )?
 	}
 }
 

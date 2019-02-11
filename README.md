@@ -15,6 +15,8 @@ Main server component for ekke
 - unit tests
 - configuration?
 - better docs, and figure out how to cross reference.
+- fuzzing and serious auditing: https://medium.com/@shnatsel/auditing-popular-rust-crates-how-a-one-line-unsafe-has-nearly-ruined-everything-fab2d837ebb1
+- measuring performance/optimizing, check Criterion crate
 
 - http server
   - which one?

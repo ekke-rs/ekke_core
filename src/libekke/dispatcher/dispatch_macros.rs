@@ -10,63 +10,74 @@
 //
 macro_rules! request_response
 {
-( $self:ident, $msg:ident, $name:ident ) =>
+( $self:ident, $msg:ident, $service:ident ) =>
 
 (
 	#[ allow( irrefutable_let_patterns ) ]
 
 	// Get the service handler out of our hashmap
 	//
-	match $self.handlers.get( "$name" )
+	match $self.handlers.get( "$service" )
 	{
 		// If we have a handler for this service
 		//
 		Some( service ) =>
 		{
 
-			// Extract the addr of the Actor that handles this service
+			// Extract the addr of the Actor that handles this service from the enum variant
 			//
-			if let IpcHandler::$name( addr ) = service
+			let IpcHandler::$service( addr ) = service;
+
+
+			// Deserialize the payload
+			//
+			let de: $service = match des( &$msg.ipc_msg.payload )
 			{
-				// Deserialize the payload
+				Ok ( data  ) => data,
+
+				Err( error ) =>
+				{
+					// If we can't deserialize, send an error message to the ipc peer application
+					//
+					Self::error_response
+					(
+						  &$self.log
+						, format!( "Ekke Server could not deserialize your cbor data for service:{} :{:?}", &$msg.ipc_msg.service, error )
+						, $msg.ipc_peer
+					);
+
+					// If we can't deserialize the message, there's no point in continuing to handle this request.
+					//
+					return;
+				}
+			};
+
+
+			// Send the message to the service actor and wait for a response to send back to the peer
+			//
+			let addr = addr     .clone();
+			let log  = $self.log.clone();
+
+			Arbiter::spawn( async move
+			{
+				// Get the response from the service actor.
 				//
-				let de: $name = match des( &$msg.ipc_msg.payload )
-				{
-					Ok ( data  ) => data,
-					Err( error ) =>
-					{
-						Self::error_response
-						(
-							  format!( "Ekke Server could not deserialize your cbor data for service:{} :{:?}", &$msg.ipc_msg.service, error )
-							, $msg.ipc_peer
-						);
+				let resp = await!( addr.send( de ) )
 
-						// If we can't deserialize the message, there's no point in continuing to handle this request.
-						//
-						return;
-					}
-				};
+					.context( "Dispatcher::Handler<IpcConnTrack> -> $service: mailbox error." ).unwraps( &log );
 
+				// Send the response to the peer application through the Ipc channel.
+				//
+				await!( $msg.ipc_peer.send( resp ) )
 
-				let addr = addr.clone();
+					.context( "Dispatcher::Handler<IpcConnTrack> -> IpcPeer: mailbox error." ).unwraps( &log );
 
-				Arbiter::spawn( async move
-				{
-					// Get the response from the service actor.
-					//
-					let resp = await!( addr.send( de ) ).expect( "MailboxError" );
+				Ok(())
 
-					// Send the response to the peer application through the Ipc channel.
-					//
-					await!( $msg.ipc_peer.send( resp ) ).expect( "MailboxError" );
-
-					Ok(())
-
-				}.boxed().compat() )
-			}
+			}.boxed().compat() )
 		},
 
-		None => panic!( "No handler registered for service: {}", "$name" )
+		None => Err( EkkeError::NoHandlerForService( "$service".to_string() ) ).unwraps( &$self.log )
 	}
 
 )

@@ -1,5 +1,5 @@
-use failure:: *              ;
-use crate  :: { IpcHandler } ;
+use failure:: *                                    ;
+use crate  :: { IpcHandler                       } ;
 
 
 
@@ -10,11 +10,15 @@ pub type EkkeResult<T> = std::result::Result<T, failure::Error>;
 //
 pub enum EkkeError
 {
-	#[ fail( display = "Handler for service already registered: {}, by actor: {:?}", _0, _1 ) ]
+	#[ fail( display = "No handler registered for service: {}", _0 ) ]
+	//
+	NoHandlerForService( String ),
+
+	#[ fail( display = "Dispatcher: Handler for service already registered: {}, by actor: {:?}", _0, _1 ) ]
 	//
 	DoubleServiceRegistration( String, IpcHandler ),
 
-	#[ fail( display = "Nobody connected to the socket" ) ]
+	#[ fail( display = "Bind to unix socket: Nobody connected to the socket" ) ]
 	//
 	NoConnectionsReceived
 }

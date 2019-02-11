@@ -1,6 +1,6 @@
 //! This is the actual functionality for the ekke framework server. The binary contains just a very basic main function. All functionality is exposed through this library so you could build against it if needed.
 //
-#![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes ) ]
+#![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
 mod ekke;
 mod dispatcher;

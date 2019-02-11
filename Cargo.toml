@@ -36,6 +36,7 @@ cargo-features = [ "default-run" ]
 	slog-term         = "2.4.0"
 	log-panics        = "2.0.0"
 
+	tokio             = { version = "~0.1.15", features = ["async-await-preview"] }
 	tokio-async-await = "~0.1.5"
 	tokio-uds         = "~0.2.5"
 

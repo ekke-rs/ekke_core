@@ -1,13 +1,15 @@
-use std               :: collections::HashMap                               ;
+use std               :: { collections::HashMap                           } ;
 
-use actix             :: prelude::*                                         ;
-use futures_util      :: {future::FutureExt, try_future::TryFutureExt}      ;
-use serde_cbor        :: from_slice as des                                  ;
-use slog              :: Logger                                             ;
-use tokio_async_await :: await                                              ;
+use actix             :: { prelude::*                                     } ;
+use failure           :: { ResultExt                                      } ;
+use futures_util      :: { future::FutureExt, try_future::TryFutureExt    } ;
+use serde_cbor        :: { from_slice as des                              } ;
+use slog              :: { Logger                                         } ;
+use tokio_async_await :: { await                                          } ;
+use tokio::prelude    :: { Future                                         } ;
 
 use crate             :: { Ekke, services::RegisterApplication, EkkeError } ;
-use ekke_io           :: { IpcConnTrack, IpcMessage }                       ;
+use ekke_io           :: { IpcConnTrack, IpcMessage, ResultExtSlog,       } ;
 
 
 #[macro_use]
@@ -37,15 +39,18 @@ impl Dispatcher
 
 	/// Send an error message back to the peer application over the ipc channel.
 	///
-	fn error_response( error: String, addr: Recipient< IpcMessage > )
+	fn error_response( log: &Logger, error: String, addr: Recipient< IpcMessage > )
 	{
-		Arbiter::spawn( async move
-		{
-			await!( addr.send( IpcMessage::new( "EkkeServerError".into(), error ) ) ).expect( "MailboxError" );
+		let log = log.clone();
 
-			Ok(())
+		Arbiter::spawn
+		(
 
-		}.boxed().compat() );
+			addr.send( IpcMessage::new( "EkkeServerError".into(), error ) )
+
+				.then( move |r| { r.context( "Dispatcher::error_response -> IpcPeer: mailbox error." ).unwraps( &log ); Ok(())} )
+
+		);
 	}
 }
 
@@ -75,7 +80,7 @@ impl Handler<IpcConnTrack> for Dispatcher
 
 			_ => Self::error_response
 
-					( format!( "Ekke Server received request for unknown service: {:?}", &msg.ipc_msg.service ), msg.ipc_peer )
+					( &self.log, format!( "Ekke Server received request for unknown service: {:?}", &msg.ipc_msg.service ), msg.ipc_peer )
 		}
 	}
 }
@@ -89,13 +94,13 @@ impl Handler<RegisterService> for Dispatcher
 	type Result = ();
 
 
-	#[allow(clippy::suspicious_else_formatting)]
+	#[ allow( clippy::suspicious_else_formatting ) ]
 	//
 	fn handle( &mut self, msg: RegisterService, _ctx: &mut Context<Self> ) -> Self::Result
 	{
 		if let Some( service ) = self.handlers.remove( &msg.name )
 		{
-			panic!( EkkeError::DoubleServiceRegistration( msg.name, service ) );
+			let _:() = Err( EkkeError::DoubleServiceRegistration( msg.name, service ) ).unwraps( &self.log );
 		}
 
 		else
