@@ -3,15 +3,13 @@ Main server component for ekke
 
 # TODO
 
+- check zeromq guide for pitfalls when handrolling messaging systems
 - warn unused crates doesn't work
 - panic logging does not work
-- logging (wrap up)
 - read about lifetimes!
-- use abstract unix socket
 - Never panic, but do a gracefull shutdown finishing existing requests but stop taking new ones.
   Make certain addr globally accessible with a singleton, like the Ekke actor which can handle shutdown.
 - create request_void macro
-- check zeromq guide for pitfalls when handrolling messaging systems
 - unit tests
 - configuration?
 - better docs, and figure out how to cross reference.

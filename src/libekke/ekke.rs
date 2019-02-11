@@ -7,7 +7,7 @@ use std::
 use actix             :: { prelude::*                                        };
 use failure           :: { ResultExt                                         };
 use futures_util      :: { future::FutureExt, try_future::TryFutureExt, join };
-use slog              :: { Logger, info, o                                   };
+use slog              :: { Logger, debug, info, o                            };
 
 use tokio_async_await :: { await            , stream::StreamExt              };
 use tokio_uds         :: { UnixStream       , UnixListener                   };
@@ -57,26 +57,29 @@ impl Actor for Ekke
 
 			// TODO: use abstract socket
 			//
-			const SOCK_ADDRB: &str = "/home/user/peerAB.sock";
-			const SOCK_ADDRC: &str = "/home/user/peerAC.sock";
+			let address_b: &str = "ekke peer B";
+			let address_c: &str = "ekke peer C";
 
 			Command::new( "target/debug/ekke_systemd" )
 
 				.arg( "--server" )
-				.arg( SOCK_ADDRB  )
+				.arg( address_b  )
 				.spawn()
 				.expect( "PeerA: failed to execute process" )
 			;
 
-
 /*			Command::new( "target/debug/peerc" )
 
 				.arg( "--server" )
-				.arg( SOCK_ADDRC  )
+				.arg( address_c  )
 				.spawn()
 				.expect( "PeerA: failed to execute process" )
 			;*/
 
+			// We use abstract unix sockets.
+			//
+			let sock_addr_b = "\x00".to_string() + address_b;
+			let sock_addr_c = "\x00".to_string() + address_c;
 
 			let dispatcher = Dispatcher::new( log.new( o!( "Actor" => "Dispatcher" ) ) ).start();
 
@@ -91,8 +94,8 @@ impl Actor for Ekke
 			println!( "Ekke: Starting IpcPeer" );
 
 
-			let fb = Self::peer( SOCK_ADDRB, dispatcher.clone(), &log );
-			let fc = Self::peer( SOCK_ADDRC, dispatcher.clone(), &log );
+			let fb = Self::peer( &sock_addr_b, dispatcher.clone(), &log );
+			let fc = Self::peer( &sock_addr_c, dispatcher.clone(), &log );
 
 
 			#[allow(clippy::useless_let_if_seq)]
@@ -116,8 +119,12 @@ impl Ekke
 {
 	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Dispatcher>, log: &'a Logger ) -> Addr< IpcPeer >
 	{
+		debug!( log, "Trying to bind to socket: {:?}", sock_addr );
+
 		let connection = await!( Self::bind( sock_addr ) ).context( "Failed to receive connections on socket" ).unwraps( log );
 		let peer_log   = log.new( o!( "Actor" => "IpcPeer" ) );
+
+		info!( log, "Listening on socket: {:?}", sock_addr );
 
 		IpcPeer::create( |ctx: &mut Context<IpcPeer>|
 		{
@@ -132,9 +139,7 @@ impl Ekke
 	//
 	async fn bind<'a>( sock_addr: &'a str ) -> Result< UnixStream, failure::Error >
 	{
-		let _ = std::fs::remove_file( sock_addr ); // .context( format!( "Cannot unlink socket address: {:?}", sock_addr ) )?;
-
-		let listener = UnixListener::bind( sock_addr )?;
+		let     listener   = UnixListener::bind( sock_addr )?;
 		let mut connection = listener.incoming();
 
 		while let Some( income ) = await!( connection.next() )
