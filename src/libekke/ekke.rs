@@ -43,8 +43,6 @@ impl Actor for Ekke
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
-
-
 		let our_address = ctx.address().clone();
 		let log = self.log.clone();
 
@@ -55,8 +53,6 @@ impl Actor for Ekke
 
 			// panic!( "Everyting is on fire" );
 
-			// TODO: use abstract socket
-			//
 			let address_b: &str = "ekke peer B";
 			let address_c: &str = "ekke peer C";
 

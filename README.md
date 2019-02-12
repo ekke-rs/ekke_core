@@ -3,7 +3,11 @@ Main server component for ekke
 
 # TODO
 
-- check zeromq guide for pitfalls when handrolling messaging systems
+- http server
+  - which one? actix-web for now... Already actor system, fast, async and probably it's secure enough. Should be reaudited though. Fuzz-tested.
+  - use websockets?
+
+- secure ipc
 - warn unused crates doesn't work
 - panic logging does not work
 - read about lifetimes!
@@ -15,10 +19,7 @@ Main server component for ekke
 - better docs, and figure out how to cross reference.
 - fuzzing and serious auditing: https://medium.com/@shnatsel/auditing-popular-rust-crates-how-a-one-line-unsafe-has-nearly-ruined-everything-fab2d837ebb1
 - measuring performance/optimizing, check Criterion crate
-
-- http server
-  - which one?
-  - use websockets?
+- investigate the possibility of using actix streamhandler for dispatcher
 
 - frontend dev
   - yew? react?
