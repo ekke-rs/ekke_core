@@ -3,7 +3,6 @@
 #![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
 mod ekke;
-mod dispatcher;
 mod errors;
 
 pub use ekke::
@@ -11,13 +10,6 @@ pub use ekke::
 	  Ekke
 };
 
-
-pub use dispatcher::
-{
-	  Dispatcher
-	, RegisterService
-	, IpcHandler
-};
 
 pub use errors::
 {
@@ -28,4 +20,17 @@ pub use errors::
 pub mod services
 {
 	pub use crate::ekke::RegisterApplication;
+}
+
+
+use crate::services::*;
+use ekke_io::{ IpcConnTrack, Dispatcher };
+
+pub(crate) fn service_map( msg: IpcConnTrack, d: &Dispatcher )
+{
+    match msg.ipc_msg.service.as_ref()
+    {
+        "RegisterApplication" => d.deserialize::<RegisterApplication>( msg ),
+        _ =>(),
+    }
 }

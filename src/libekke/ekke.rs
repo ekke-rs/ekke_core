@@ -8,18 +8,13 @@ use actix             :: { prelude::*                                        };
 use failure           :: { ResultExt                                         };
 use futures_util      :: { future::FutureExt, try_future::TryFutureExt, join };
 use slog              :: { Logger, debug, info, o                            };
+use typename          :: { TypeName                                          };
 
 use tokio_async_await :: { await            , stream::StreamExt              };
 use tokio_uds         :: { UnixStream       , UnixListener                   };
 
-use ekke_io           :: { IpcPeer          , ResultExtSlog                  };
-use crate::
-{
-	  Dispatcher
-	, RegisterService
-	, IpcHandler
-	, EkkeError
-};
+use ekke_io           :: { IpcPeer          , ResultExtSlog,Dispatcher, Service };
+use crate::{ EkkeError };
 
 
 
@@ -27,7 +22,7 @@ mod register_application;
 pub use register_application::*;
 
 
-#[ derive( Debug, Clone ) ]
+#[ derive( Debug, Clone, TypeName ) ]
 //
 pub struct Ekke
 {
@@ -43,8 +38,12 @@ impl Actor for Ekke
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
-		let our_address = ctx.address().clone();
+		let _our_address = ctx.address().clone();
 		let log = self.log.clone();
+
+		let dispatcher = Dispatcher::new( log.new( o!( "Actor" => "Dispatcher" ) ), crate::service_map ).start();
+
+		self.register_service::<RegisterApplication>( &dispatcher, ctx );
 
 		let program = async move
 		{
@@ -77,14 +76,13 @@ impl Actor for Ekke
 			let sock_addr_b = "\x00".to_string() + address_b;
 			let sock_addr_c = "\x00".to_string() + address_c;
 
-			let dispatcher = Dispatcher::new( log.new( o!( "Actor" => "Dispatcher" ) ) ).start();
 
-			await!( dispatcher.send( RegisterService
-			{
-				  name   : "RegisterApplication".into()
-				, service: IpcHandler::RegisterApplication( our_address )
+			// dispatcher.do_send( RegisterService
+			// {
+			// 	  name   : "RegisterApplication".into()
+			// 	, service: IpcHandler::RegisterApplication( our_address )
 
-			})).expect( "MailboxError" );
+			// });
 
 
 			println!( "Ekke: Starting IpcPeer" );

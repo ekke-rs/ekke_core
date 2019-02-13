@@ -20,6 +20,7 @@ Main server component for ekke
 - fuzzing and serious auditing: https://medium.com/@shnatsel/auditing-popular-rust-crates-how-a-one-line-unsafe-has-nearly-ruined-everything-fab2d837ebb1
 - measuring performance/optimizing, check Criterion crate
 - investigate the possibility of using actix streamhandler for dispatcher
+- investigate actix service actors, notably for dispatcher, so we can get it's address from the registry, also for error handling actor, for main application actor etc. Use supervised.
 
 - frontend dev
   - yew? react?
