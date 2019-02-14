@@ -36,15 +36,15 @@ pub mod services
 
 
 use crate::services::*;
-use ekke_io::{ IpcConnTrack, Rpc };
+use ekke_io::{ IpcMessage, Rpc };
+use actix::Recipient;
 
 
-
-pub(crate) fn service_map( msg: IpcConnTrack, d: &Rpc )
+pub(crate) fn service_map( rpc: &Rpc, msg: IpcMessage, ipc_peer: Recipient< IpcMessage > )
 {
-    match msg.ipc_msg.service.as_ref()
+    match msg.service.as_ref()
     {
-        "RegisterApplication" => d.deserialize::<RegisterApplication>( msg ),
+        "RegisterApplication" => rpc.deserialize::<RegisterApplication>( msg, ipc_peer ),
         _ =>(),
     }
 }
