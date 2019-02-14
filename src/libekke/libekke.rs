@@ -2,6 +2,7 @@
 //
 #![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
+// mod config;
 mod ekke;
 mod errors;
 
@@ -10,6 +11,11 @@ pub use ekke::
 	  Ekke
 };
 
+/*pub(crate) use self::config::
+{
+	  SETTINGS
+};
+*/
 
 pub use errors::
 {
@@ -17,16 +23,24 @@ pub use errors::
 	, EkkeResult
 };
 
+
 pub mod services
 {
 	pub use crate::ekke::RegisterApplication;
 }
 
 
-use crate::services::*;
-use ekke_io::{ IpcConnTrack, Dispatcher };
 
-pub(crate) fn service_map( msg: IpcConnTrack, d: &Dispatcher )
+
+
+
+
+use crate::services::*;
+use ekke_io::{ IpcConnTrack, Rpc };
+
+
+
+pub(crate) fn service_map( msg: IpcConnTrack, d: &Rpc )
 {
     match msg.ipc_msg.service.as_ref()
     {

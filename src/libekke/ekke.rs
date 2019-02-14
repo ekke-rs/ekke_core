@@ -1,10 +1,13 @@
+// use std::collections::HashMap;
 use std::
 {
-	  process::Command
+	  /*env
+	,*/ process::Command
 	, str
 };
 
 use actix             :: { prelude::*                                        };
+// use config            :: { File, FileFormat                                  };
 use failure           :: { ResultExt                                         };
 use futures_util      :: { future::FutureExt, try_future::TryFutureExt, join };
 use slog              :: { Logger, debug, info, o                            };
@@ -13,10 +16,10 @@ use typename          :: { TypeName                                          };
 use tokio_async_await :: { await            , stream::StreamExt              };
 use tokio_uds         :: { UnixStream       , UnixListener                   };
 
-use ekke_io           :: { IpcPeer          , ResultExtSlog,Dispatcher, Service };
+use ekke_io           :: { IpcPeer          , ResultExtSlog,Rpc, Service,IpcMessage };
 use crate::{ EkkeError };
 
-
+// use crate::config::SETTINGS;
 
 mod register_application;
 pub use register_application::*;
@@ -38,10 +41,27 @@ impl Actor for Ekke
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
+		// let defaults = env::current_exe().unwraps( &self.log ).parent().unwrap().join( "../../ekke_core/defaults.hjson" );
+
+		// {
+		// 	debug!( &self.log, "Trying to read config file" );
+
+		// 	SETTINGS.write().unwraps( &self.log )
+
+		// 		.merge( File::from_str( defaults.to_str().unwrap(), FileFormat::Hjson ) )
+		// 		.unwraps( &self.log )
+
+		// 	;
+		// }
+
+		// println!( "{:#?}", *SETTINGS.read().unwraps( &self.log ) );
+		// println!( "{:#?}", SETTINGS.read().unwraps( &self.log ).try_into::<HashMap<String, String>>().unwrap() );
+
+
 		let _our_address = ctx.address().clone();
 		let log = self.log.clone();
 
-		let dispatcher = Dispatcher::new( log.new( o!( "Actor" => "Dispatcher" ) ), crate::service_map ).start();
+		let dispatcher = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 
 		self.register_service::<RegisterApplication>( &dispatcher, ctx );
 
@@ -111,7 +131,7 @@ impl Actor for Ekke
 
 impl Ekke
 {
-	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Dispatcher>, log: &'a Logger ) -> Addr< IpcPeer >
+	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Rpc>, log: &'a Logger ) -> Recipient< IpcMessage >
 	{
 		debug!( log, "Trying to bind to socket: {:?}", sock_addr );
 
@@ -120,10 +140,11 @@ impl Ekke
 
 		info!( log, "Listening on socket: {:?}", sock_addr );
 
-		IpcPeer::create( |ctx: &mut Context<IpcPeer>|
+		IpcPeer::create( |ctx: &mut Context<IpcPeer<UnixStream>>|
 		{
 			IpcPeer::new( connection, dispatch.recipient(), ctx.address(), peer_log )
-		})
+
+		}).recipient()
 
 		// IpcPeer::new( connection, dispatch )
 	}

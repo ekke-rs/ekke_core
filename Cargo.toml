@@ -25,7 +25,11 @@ cargo-features = [ "default-run" ]
 	ekke_io           = { path = "../ekke_io" }
 
 	actix             = "~0.7.9"
+	config            = { version = "0.9.2", features = [ "hjson" ] }
 	failure           = "~0.1.5"
+	futures-locks     = "0.3.3"
+	lazy_static       = "1.2.0"
+	state             = "0.4.1"
 	typename          = "0.1.0"
 
 	serde             = "~1.0.87"
