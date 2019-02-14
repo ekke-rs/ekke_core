@@ -37,7 +37,7 @@ impl Actor for Ekke
 	type Context = Context<Self>;
 
 	// Start the server
-	// Register our services with the dispatcher
+	// Register our services with the rpcer
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
@@ -61,9 +61,9 @@ impl Actor for Ekke
 		let _our_address = ctx.address().clone();
 		let log = self.log.clone();
 
-		let dispatcher = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
+		let rpcer = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 
-		self.register_service::<RegisterApplication>( &dispatcher, ctx );
+		self.register_service::<RegisterApplication>( &rpcer, ctx );
 
 		let program = async move
 		{
@@ -97,7 +97,7 @@ impl Actor for Ekke
 			let sock_addr_c = "\x00".to_string() + address_c;
 
 
-			// dispatcher.do_send( RegisterService
+			// rpcer.do_send( RegisterService
 			// {
 			// 	  name   : "RegisterApplication".into()
 			// 	, service: IpcHandler::RegisterApplication( our_address )
@@ -108,8 +108,8 @@ impl Actor for Ekke
 			println!( "Ekke: Starting IpcPeer" );
 
 
-			let fb = Self::peer( &sock_addr_b, dispatcher.clone(), &log );
-			let fc = Self::peer( &sock_addr_c, dispatcher.clone(), &log );
+			let fb = Self::peer( &sock_addr_b, rpcer.clone(), &log );
+			let fc = Self::peer( &sock_addr_c, rpcer.clone(), &log );
 
 
 			#[allow(clippy::useless_let_if_seq)]
@@ -131,7 +131,7 @@ impl Actor for Ekke
 
 impl Ekke
 {
-	pub async fn peer<'a>( sock_addr: &'a str, dispatch: Addr<Rpc>, log: &'a Logger ) -> Recipient< IpcMessage >
+	pub async fn peer<'a>( sock_addr: &'a str, rpc: Addr<Rpc>, log: &'a Logger ) -> Recipient< IpcMessage >
 	{
 		debug!( log, "Trying to bind to socket: {:?}", sock_addr );
 
@@ -142,11 +142,11 @@ impl Ekke
 
 		IpcPeer::create( |ctx: &mut Context<IpcPeer<UnixStream>>|
 		{
-			IpcPeer::new( connection, dispatch.recipient(), ctx.address(), peer_log )
+			IpcPeer::new( connection, rpc, ctx.address(), peer_log )
 
 		}).recipient()
 
-		// IpcPeer::new( connection, dispatch )
+		// IpcPeer::new( connection, rpc )
 	}
 
 

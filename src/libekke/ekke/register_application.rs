@@ -7,7 +7,7 @@ use slog              :: { info                            };
 
 use crate::Ekke;
 
-#[ derive( Debug, Clone, Serialize, Deserialize, Message, TypeName ) ] #[rtype(result="IpcMessage")]
+#[ derive( Debug, Clone, Serialize, Deserialize, Message, TypeName ) ] #[ rtype( result="IpcMessage" ) ]
 //
 pub struct RegisterApplication
 {

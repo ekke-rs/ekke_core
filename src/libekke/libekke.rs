@@ -27,6 +27,7 @@ pub use errors::
 pub mod services
 {
 	pub use crate::ekke::RegisterApplication;
+	pub use crate::ekke::RegisterApplicationResponse;
 }
 
 
