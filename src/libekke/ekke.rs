@@ -16,7 +16,7 @@ use typename          :: { TypeName                                          };
 use tokio_async_await :: { await            , stream::StreamExt              };
 use tokio_uds         :: { UnixStream       , UnixListener                   };
 
-use ekke_io           :: { IpcPeer          , ResultExtSlog,Rpc, Service,IpcMessage };
+use ekke_io           :: { IpcPeer          , ResultExtSlog,Rpc, RegisterServiceMethod,IpcMessage };
 use crate::{ EkkeError };
 
 // use crate::config::SETTINGS;
@@ -37,7 +37,7 @@ impl Actor for Ekke
 	type Context = Context<Self>;
 
 	// Start the server
-	// Register our services with the rpcer
+	// Register our services with the rpc
 	//
 	fn started( &mut self, ctx: &mut Self::Context )
 	{
@@ -61,9 +61,9 @@ impl Actor for Ekke
 		let _our_address = ctx.address().clone();
 		let log = self.log.clone();
 
-		let rpcer = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
+		let rpc = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 
-		self.register_service::<RegisterApplication>( &rpcer, ctx );
+		self.register_service::<RegisterApplication>( &rpc, ctx );
 
 		let program = async move
 		{
@@ -97,7 +97,7 @@ impl Actor for Ekke
 			let sock_addr_c = "\x00".to_string() + address_c;
 
 
-			// rpcer.do_send( RegisterService
+			// rpc.do_send( RegisterService
 			// {
 			// 	  name   : "RegisterApplication".into()
 			// 	, service: IpcHandler::RegisterApplication( our_address )
@@ -108,8 +108,8 @@ impl Actor for Ekke
 			println!( "Ekke: Starting IpcPeer" );
 
 
-			let fb = Self::peer( &sock_addr_b, rpcer.clone(), &log );
-			let fc = Self::peer( &sock_addr_c, rpcer.clone(), &log );
+			let fb = Self::peer( &sock_addr_b, rpc.clone(), &log );
+			let fc = Self::peer( &sock_addr_c, rpc.clone(), &log );
 
 
 			#[allow(clippy::useless_let_if_seq)]
