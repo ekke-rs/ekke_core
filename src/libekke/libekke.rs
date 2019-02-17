@@ -45,7 +45,7 @@ pub(crate) fn service_map( rpc: &Rpc, msg: IpcMessage, ipc_peer: Recipient< IpcM
 {
     match msg.service.as_ref()
     {
-        "RegisterApplication" => rpc.deserialize::<RegisterApplication>( msg, ipc_peer ),
+        "RegisterApplication" => rpc.deser_into::<RegisterApplication>( msg, ipc_peer ),
         _ =>(),
     }
 }
