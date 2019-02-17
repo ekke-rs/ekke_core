@@ -4,6 +4,7 @@ use std::
 	  /*env
 	,*/ process::Command
 	, str
+	, path::PathBuf
 };
 
 use actix             :: { prelude::*                                        };
@@ -18,6 +19,7 @@ use tokio_uds         :: { UnixStream       , UnixListener                   };
 
 use ekke_io           :: { IpcPeer          , ResultExtSlog,Rpc, RegisterServiceMethod,IpcMessage };
 use crate::{ EkkeError };
+use clap::{ App, Arg, ArgMatches, crate_version, crate_authors };
 
 // use crate::config::SETTINGS;
 
@@ -77,7 +79,7 @@ impl Actor for Ekke
 
 			Command::new( "target/debug/ekke_systemd" )
 
-				.arg( "--server" )
+				.arg( "--socket" )
 				.arg( address_b  )
 				.spawn()
 				.expect( "PeerA: failed to execute process" )
@@ -145,8 +147,6 @@ impl Ekke
 			IpcPeer::new( connection, rpc, ctx.address(), peer_log )
 
 		}).recipient()
-
-		// IpcPeer::new( connection, rpc )
 	}
 
 
@@ -173,6 +173,49 @@ impl Ekke
 		};
 
 		Err( EkkeError::NoConnectionsReceived )?
+	}
+
+
+	pub async fn server_peer( log: Logger, rpc: Addr< Rpc > ) -> Addr< IpcPeer<UnixStream> >
+	{
+		let args       = Self::app_args();
+
+		let sock_addr  = "\x00".to_string() + args.value_of( "socket" ).unwrap();
+
+		let connection = await!( UnixStream::connect( PathBuf::from( &sock_addr ) ) )
+
+			.context( "Failed to connect to socket" ).unwraps( &log );
+
+
+		let peer_log = log.new( o!( "Actor" => "IpcPeer" ) );
+
+		IpcPeer::create( |ctx: &mut Context<IpcPeer<UnixStream>>|
+		{
+			IpcPeer::new( connection, rpc, ctx.address(), peer_log )
+		})
+	}
+
+
+	pub fn app_args() -> ArgMatches< 'static >
+	{
+		App::new( "ekke_app" )
+
+			.author ( crate_authors!() )
+			.version( crate_version!() )
+			.about  ( "Systemd frontend for the Ekke Framework" )
+
+
+			.arg
+			(
+				Arg::with_name( "socket"  )
+
+					.help ( "the socket on which to connect" )
+					.long ( "socket" )
+					.required( true )
+					.value_name( "socket" )
+			)
+
+		.get_matches()
 	}
 }
 

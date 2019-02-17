@@ -8,7 +8,7 @@ mod errors;
 
 pub use ekke::
 {
-	  Ekke
+	Ekke
 };
 
 /*pub(crate) use self::config::

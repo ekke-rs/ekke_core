@@ -23,11 +23,11 @@ Main server component for ekke
 # TODO
 
 - http server
-  - which one? actix-web for now... Already actor system, fast, async and probably it's secure enough. Should be reaudited though. Fuzz-tested.
-  - use websockets?
+  - which one? actix-web for now...  fast, async and probably it's secure enough. Should be reaudited though. Fuzz-tested.
+  - use websockets? disposition: yes
 
 - configuration?
-- secure ipc
+- only bind to one socket for all peer apps? peer authentication?
 - warn unused crates doesn't work
 - panic logging does not work
 - read about lifetimes!
