@@ -2,20 +2,21 @@
 //
 #![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
-// mod config;
 mod ekke;
 mod errors;
+mod config;
+
 
 pub use ekke::
 {
 	Ekke
 };
 
-/*pub(crate) use self::config::
+use config::
 {
-	  SETTINGS
+	Settings
 };
-*/
+
 
 pub use errors::
 {

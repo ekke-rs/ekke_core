@@ -3,12 +3,9 @@
 #![ warn(unused_extern_crates) ]
 
 use libekke    :: { Ekke                         };
-use ekke_io    :: { ThreadLocalDrain             };
 use actix      :: { prelude::*                   };
 
-use slog       :: { Logger, Drain, o             };
-use slog_term  :: { TermDecorator, CompactFormat };
-use slog_async :: { Async                        };
+
 
 // use log_panics ;
 
@@ -16,27 +13,15 @@ use slog_async :: { Async                        };
 
 fn main()
 {
-	let sys = System::new( "peers" );
+	let sys = System::new( "Ekke Server" );
 
-	let log = root_logger().new( o!( "thread_name" => "main", "Actor" => "Ekke" ) );
-
-	// log_panics::init();
-
-	let _ekke = Ekke{ log }.start();
+	let _app: Addr< Ekke > = SystemService::start_service( &Arbiter::new( "Ekke Server") );
 
 	sys.run();
 }
 
 
 
-fn root_logger() -> Logger
-{
-	let decorator = TermDecorator ::new().stdout()  .build()        ;
-	let compact   = CompactFormat ::new( decorator ).build().fuse() ;
-	let drain     = Async         ::new( compact   ).build().fuse() ;
-
-	Logger::root( ThreadLocalDrain{ drain }.fuse(), o!( "version" => "0.1" ) )
-}
 
 
 

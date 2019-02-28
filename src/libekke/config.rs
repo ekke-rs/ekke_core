@@ -1,26 +1,18 @@
-use std::path::PathBuf;
-use std::sync::RwLock;
-use config::{ Config };
-use lazy_static::lazy_static;
+use serde       :: { Serialize, Deserialize } ;
+use std         :: { path::PathBuf          } ;
 
-lazy_static!
+
+#[ derive( Serialize, Deserialize, Debug, Clone ) ]
+//
+pub struct Settings
 {
-	pub static ref SETTINGS: RwLock<Config> = RwLock::new( Config::default() );
+	pub apps: Vec< AppConfig >
 }
 
-
-
-
-struct Settings
+#[ derive( Serialize, Deserialize, Debug, Clone ) ]
+//
+pub struct AppConfig
 {
-	apps: Vec< Application >
+	pub name: String ,
+	pub path: PathBuf,
 }
-
-
-struct Application
-{
-	  name: String
-	, path: PathBuf
-	, args: Vec< String >
-}
-

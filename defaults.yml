@@ -1,0 +1,6 @@
+default:
+
+  apps:
+
+    - name: systemd
+      path: target/debug/ekke_systemd

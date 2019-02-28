@@ -22,12 +22,13 @@ Main server component for ekke
 
 # TODO
 
+
 - http server
   - which one? actix-web for now...  fast, async and probably it's secure enough. Should be reaudited though. Fuzz-tested.
   - use websockets? disposition: yes
 
-- configuration?
-- only bind to one socket for all peer apps? peer authentication?
+- use pipes instead of uds for added security. On windows there is a tokio named pipes, on linux tokio_file_unix
+
 - warn unused crates doesn't work
 - panic logging does not work
 - read about lifetimes!
