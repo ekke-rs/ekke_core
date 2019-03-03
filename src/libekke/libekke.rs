@@ -3,6 +3,7 @@
 #![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
 mod ekke;
+mod ekke_server;
 mod errors;
 mod config;
 
@@ -10,6 +11,12 @@ mod config;
 pub use ekke::
 {
 	Ekke
+};
+
+
+pub use ekke_server::
+{
+	EkkeServer
 };
 
 use config::

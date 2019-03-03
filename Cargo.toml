@@ -22,13 +22,14 @@ cargo-features = [ "default-run" ]
 
 [dependencies]
 
-	ekke_io           = { path = "../ekke_io"     }
-	ekke_config       = { path = "../ekke_config" }
+	ekke_io           = { path = "../ekke_io"    , features = [ "http_server" ] }
+	ekke_config       = { path = "../ekke_config"                               }
 
 	actix             = "0.7.9"
 	clap              = "2.32.0"
 	failure           = "0.1.5"
 	futures-locks     = "0.3.3"
+	hyper             = { version = "0.12.25" }
 	lazy_static       = "1.2.0"
 	parking_lot       = "0.7.1"
 	state             = "0.4.1"

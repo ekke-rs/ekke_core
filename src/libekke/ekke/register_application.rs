@@ -11,8 +11,10 @@ use crate::Ekke;
 //
 pub struct RegisterApplication
 {
-	pub app_name: String,
-	pub conn_id : ConnID,
+	pub conn_id : ConnID      ,
+	pub app_name: String      ,
+	pub route   : String      ,
+	pub services: Vec<String> ,
 }
 
 #[ derive( Debug, Clone, Serialize, Deserialize, Message, TypeName ) ]

@@ -34,7 +34,7 @@ use ekke_io::
 };
 
 use ekke_config::{ Config };
-use crate      ::{ EkkeError, Settings };
+use crate      ::{ EkkeError, Settings, EkkeServer };
 
 
 
@@ -82,15 +82,22 @@ impl SystemService for Ekke
 
 		let rpc = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 
+		// Register our services
+		//
 		self.register_service::<RegisterApplication>( &rpc, ctx );
 
+
+		// Launch an ipc peer for each child application
+		//
 		let apps = { self.settings.read().get().apps.clone() };
 
 		let program = async move
 		{
 			info!( log, "Ekke Starting up" );
 
-			let tasks: Vec< Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> > > = apps.iter().map( |app|
+			let tasks: Vec< Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> > > =
+
+			apps.iter().map( |app| -> Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> >
 			{
 				dbg!( &app );
 
@@ -111,13 +118,14 @@ impl SystemService for Ekke
 
 				info!( log, "Starting IpcPeer for {}", &app.name );
 
-				let f: Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> > = Self::peer( sock_addr, rpc.clone(), &log ).boxed();
-
-				f
+				Self::peer( sock_addr, rpc.clone(), &log ).boxed()
 
 			}).collect();
 
 			let _recipients = await!( join_all( tasks ) );
+
+			let http = EkkeServer::new( log.new( o!( "Actor" => "EkkeServer" ) ) );
+			await!( http.run() );
 
 			Ok(())
 		};
@@ -163,7 +171,7 @@ impl Ekke
 		let     listener   = UnixListener::bind( sock_addr )?;
 		let mut connection = listener.incoming();
 
-		while let Some( income ) = await!( connection.next() )
+		if let Some( income ) = await!( connection.next() )
 		{
 			// Return has to be here! We want to break from loop and function when we are connected.
 			// We only allow one connection atm. It's not great security, but we only want our child

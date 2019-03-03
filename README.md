@@ -22,24 +22,21 @@ Main server component for ekke
 
 # TODO
 
+- use pipes instead of uds for added security. On windows there is a tokio named pipes, on linux tokio_file_unix
 
 - http server
   - which one? actix-web for now...  fast, async and probably it's secure enough. Should be reaudited though. Fuzz-tested.
   - use websockets? disposition: yes
 
-- use pipes instead of uds for added security. On windows there is a tokio named pipes, on linux tokio_file_unix
-
 - warn unused crates doesn't work
 - panic logging does not work
-- read about lifetimes!
 - Never panic, but do a gracefull shutdown finishing existing requests but stop taking new ones.
-  Make certain addr globally accessible with a singleton, like the Ekke actor which can handle shutdown.
 - unit tests
 - better docs, and figure out how to cross reference.
 - fuzzing and serious auditing: https://medium.com/@shnatsel/auditing-popular-rust-crates-how-a-one-line-unsafe-has-nearly-ruined-everything-fab2d837ebb1
 - measuring performance/optimizing, check Criterion crate
 - investigate the possibility of using actix streamhandler for dispatcher
-- investigate actix service actors, notably for dispatcher, so we can get it's address from the registry, also for error handling actor, for main application actor etc. Use supervised.
+- investigate actix service actors, notably for dispatcher, so we can get it's address from the registry, also for error handling actor, etc. Use supervised.
 
 
 
