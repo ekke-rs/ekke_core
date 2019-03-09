@@ -35,7 +35,7 @@ impl App
 	pub fn register( &mut self, r: RegisterApplication )
 	{
 		self.services = r.services;
-		self.routes   = vec![ r.route ];
+		self.routes   = r.routes;
 	}
 
 

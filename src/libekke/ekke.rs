@@ -1,28 +1,30 @@
 use std::
 {
 	  env
-	, rc::Rc
-	, cell::RefCell
+(??)	, process::Command
+(??)	, str
 	, path::PathBuf
 	, sync::Arc
+	, rc::Rc
+	, cell::RefCell
 	, convert::TryFrom
 };
 
 use actix             :: { prelude::*, registry::SystemService                          } ;
 use clap              :: { App as AppCli, Arg, ArgMatches, crate_version, crate_authors } ;
-use failure           :: { ResultExt as _                                                 };
-use futures           :: { future::ok                                                     };
-use futures_util      :: { future::FutureExt, try_future::TryFutureExt, future::join_all  };
-use hashbrown         :: { HashMap                                                        };
-use parking_lot       :: { RwLock                                                         };
-use slog              :: { Logger, Drain, debug, info, o, error                           };
-use slog_term         :: { TermDecorator, CompactFormat                                   };
-use slog_async        :: { Async                                                          };
-use slog_unwraps      :: { ResultExt as _                                                 };
-use typename          :: { TypeName                                                       };
+use failure           :: { ResultExt as _                                               } ;
+use futures           :: { future::ok                                                   } ;
+use futures_util      :: { future::{ FutureExt, join_all }, try_future::TryFutureExt    } ;
+use hashbrown         :: { HashMap                                                      } ;
+use parking_lot       :: { RwLock                                                       } ;
+use slog              :: { Logger, Drain, debug, info, error, o                         } ;
+use slog_term         :: { TermDecorator, CompactFormat                                 } ;
+use slog_async        :: { Async                                                        } ;
+use slog_unwraps      :: { ResultExt as _                                               } ;
+use typename          :: { TypeName                                                     } ;
 
-use tokio_async_await :: { await                                       };
-use tokio_uds         :: { UnixStream                                       };
+use tokio_async_await :: { await                                                        } ;
+use tokio_uds         :: { UnixStream                                                   } ;
 
 use ekke_io::
 {
@@ -33,7 +35,7 @@ use ekke_io::
 };
 
 use ekke_config :: { Config                    } ;
-use crate       :: { Settings, App } ;
+use crate       :: { Settings, EkkeServer, App } ;
 
 
 
@@ -48,7 +50,8 @@ pub use rpc_address::*;
 //
 pub struct Ekke
 {
-	log     : Logger                                ,
+(??)	pub log: Logger,
+(??)	settings: Arc<RwLock< Config<Settings> >>,
 	rpc     : Addr< Rpc >                           ,
 	settings: Arc< RwLock < Config<Settings>     >> ,
 	apps    : Rc < RefCell< HashMap<String, App> >> ,
@@ -66,11 +69,15 @@ impl Default for Ekke
 		debug!( &log, "Trying to read default config file" );
 
 		let defaults = env::current_exe().unwraps( &log ).parent().unwrap().join( "../../ekke_core/defaults.yml" );
+		let rpc      = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
+
+		let serv_log = log.new( o!( "Actor" => "EkkeServer" ) );
 
 		Ekke
 		{
 			settings: Arc::new( RwLock ::new(     Config::try_from( &defaults             ).unwraps( &log ) )),
 			apps    : Rc ::new( RefCell::new(    HashMap::new     (                       )                 )),
+			http    : Rc ::new( RefCell::new( EkkeServer::new     ( serv_log, rpc.clone() )                 )),
 			log     ,
 			rpc     ,
 		}
@@ -90,6 +97,7 @@ impl SystemService for Ekke
 
 		let log  = self.log.new( o!( "Actor" => "Ekke async block" ) );
 		let rpc  = self.rpc .clone();
+		let http = self.http.clone();
 		let apps = self.apps.clone();
 		// Register our services
 		//
@@ -139,6 +147,14 @@ impl SystemService for Ekke
 
 			})));
 
+			// keep the borrow as short as possible.
+			// probably we should use a locking mechanism to prevent this being locked twice,
+			// then as long as we are single threaded, this should not happen, as there is no
+			// yield point (no awaits) within this block.
+			//
+			{
+				http.borrow().run();
+			}
 
 			Ok(())
 		};
