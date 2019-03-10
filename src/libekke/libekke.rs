@@ -7,7 +7,7 @@ pub type PinBoxFut<T> = std::pin::Pin<Box< dyn futures::future::Future< Output =
 
 mod app;
 mod ekke;
-mod ekke_server;
+// mod ekke_server;
 mod errors;
 mod config;
 
@@ -28,10 +28,10 @@ pub use ekke::
 };
 
 
-pub use ekke_server::
-{
-	EkkeServer
-};
+// pub use ekke_server::
+// {
+// 	EkkeServer
+// };
 
 
 use config::

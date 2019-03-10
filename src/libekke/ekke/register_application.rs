@@ -47,9 +47,9 @@ impl Handler<RegisterApplication> for Ekke
 			{
 				Some( app ) =>
 				{
-					for route in &msg.routes
+					for _route in &msg.routes
 					{
-						self.http.borrow_mut().add_route( route.to_string(), app.peer.clone() ).unwraps( &self.log );
+						// self.http.borrow_mut().add_route( route.to_string(), app.peer.clone() ).unwraps( &self.log );
 					}
 
 					app.register( msg );
