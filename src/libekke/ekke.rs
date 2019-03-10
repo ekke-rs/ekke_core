@@ -1,36 +1,40 @@
 use std::
 {
 	  env
-	, str
+	, rc::Rc
+	, cell::RefCell
 	, path::PathBuf
 	, sync::Arc
 	, convert::TryFrom
 };
 
-use actix             :: { prelude::*, registry::SystemService                            };
-use clap              :: { App, Arg, ArgMatches, crate_version, crate_authors             };
+use actix             :: { prelude::*, registry::SystemService                          } ;
+use clap              :: { App as AppCli, Arg, ArgMatches, crate_version, crate_authors } ;
 use failure           :: { ResultExt as _                                                 };
-use futures_util      :: { future::FutureExt, try_future::TryFutureExt  };
+use futures           :: { future::ok                                                     };
+use futures_util      :: { future::FutureExt, try_future::TryFutureExt, future::join_all  };
+use hashbrown         :: { HashMap                                                        };
 use parking_lot       :: { RwLock                                                         };
-use slog              :: { Logger, Drain, debug, info, o                                  };
+use slog              :: { Logger, Drain, debug, info, o, error                           };
 use slog_term         :: { TermDecorator, CompactFormat                                   };
 use slog_async        :: { Async                                                          };
 use slog_unwraps      :: { ResultExt as _                                                 };
 use typename          :: { TypeName                                                       };
 
-use tokio_async_await :: { await, stream::StreamExt                                       };
-use tokio_uds         :: { UnixStream, UnixListener                                       };
+use tokio_async_await :: { await                                       };
+use tokio_uds         :: { UnixStream                                       };
 
 use ekke_io::
 {
-	IpcMessage            ,
-	IpcPeer ,
+	IpcPeer               ,
+	RegisterServiceMethod ,
 	Rpc                   ,
 	ThreadLocalDrain      ,
 };
 
-use ekke_config::{ Config };
-use crate      ::{ EkkeError, Settings };
+use ekke_config :: { Config                    } ;
+use crate       :: { Settings, App } ;
+
 
 
 
@@ -47,6 +51,7 @@ pub struct Ekke
 	log     : Logger                                ,
 	rpc     : Addr< Rpc >                           ,
 	settings: Arc< RwLock < Config<Settings>     >> ,
+	apps    : Rc < RefCell< HashMap<String, App> >> ,
 }
 
 
@@ -65,6 +70,7 @@ impl Default for Ekke
 		Ekke
 		{
 			settings: Arc::new( RwLock ::new(     Config::try_from( &defaults             ).unwraps( &log ) )),
+			apps    : Rc ::new( RefCell::new(    HashMap::new     (                       )                 )),
 			log     ,
 			rpc     ,
 		}
@@ -83,10 +89,56 @@ impl SystemService for Ekke
 		// println!( "{:#?}", *self.settings.read() );
 
 		let log  = self.log.new( o!( "Actor" => "Ekke async block" ) );
+		let rpc  = self.rpc .clone();
+		let apps = self.apps.clone();
+		// Register our services
+		//
+		self.register_service::<RegisterApplication>( &rpc, ctx );
+
+
+		// Launch an ipc peer for each child application
+		//
+		let appcfgs = { self.settings.read().get().apps.clone() };
 
 		let program = async move
 		{
 			info!( log, "Ekke Starting up" );
+
+			// Launch each application. I think the implementation here is ok, but it's difficult
+			// to prove that there can't be any synchronisation problems.
+			//
+			// We only get a peer after a connection exists, and as soon as a connection exists,
+			// child apps send RegisterApplication. Our handler of RegisterApplication needs to have
+			// the app object that we store on self, which only exists after we have a peer.
+			//
+			// In principle, as soon as a connection is incoming, and we have a peer, we store it in
+			// self.apps, without any yield points between those 2 events. This means that normally
+			// code for RegisterApplication can never run before we have saved the app object.
+			//
+			// However, another problem can arise. Our self.apps is in a refcell and we should not try
+			// to borrow it twice. So here again, we guarantee that the borrow is in a critical?
+			// section. That means there is no yield point...
+			//
+			await!( join_all( appcfgs.into_iter().map( |appcfg|
+			{
+				let l         = log.new( o!( "fn" => "App::launch" ) );
+				let self_apps = apps.clone()                          ;
+
+				App::launch( l, rpc.clone(), appcfg )
+
+					.and_then( move |app|
+					{
+						self_apps.borrow_mut().insert( app.name.clone(), app );
+						ok(())
+					})
+
+					.map_err( |err|
+					{
+						error!( log, "Cannot launch application: {}", err );
+					})
+
+			})));
+
 
 			Ok(())
 		};
@@ -106,47 +158,7 @@ impl Ekke
 		Logger::root( ThreadLocalDrain{ drain }.fuse(), o!( "version" => "0.1" ) )
 	}
 
-	pub async fn peer<'a>( sock_addr: String, rpc: Addr<Rpc>, log: &'a Logger ) -> Recipient< IpcMessage >
-	{
-		debug!( log, "Trying to bind to socket: {:?}", sock_addr );
 
-		let connection = await!( Self::bind( &sock_addr ) ).context( "Failed to receive connections on socket" ).unwraps( log );
-		let peer_log   = log.new( o!( "Actor" => "IpcPeer" ) );
-
-		info!( log, "Listening on socket: {:?}", sock_addr );
-
-		IpcPeer::create( |ctx: &mut Context<IpcPeer<UnixStream>>|
-		{
-			IpcPeer::new( connection, rpc, ctx.address(), peer_log )
-
-		}).recipient()
-	}
-
-
-	// We only want one program to connect, so we stop listening after the first stream comes in
-	//
-	async fn bind<'a>( sock_addr: &'a str ) -> Result< UnixStream, failure::Error >
-	{
-		let     listener   = UnixListener::bind( sock_addr )?;
-		let mut connection = listener.incoming();
-
-		if let Some( income ) = await!( connection.next() )
-		{
-			// Return has to be here! We want to break from loop and function when we are connected.
-			// We only allow one connection atm. It's not great security, but we only want our child
-			// process to connect to us, so not allowing further connections.
-			//
-			// This does mean that if the connection would drop, child process cannot reconnect but needs to be
-			// given a new socket, which currently is not implemented. That being said, on unix sockets, this
-			// shouldn't be a problem in real life, but this is most certainly temporary code.
-			//
-			// TODO: Make secure ipc channel
-			//
-			return Ok( income? )
-		};
-
-		Err( EkkeError::NoConnectionsReceived )?
-	}
 
 
 	pub async fn server_peer( log: Logger, rpc: Addr< Rpc > ) -> Addr< IpcPeer<UnixStream> >
@@ -171,7 +183,7 @@ impl Ekke
 
 	pub fn app_args() -> ArgMatches< 'static >
 	{
-		App::new( "ekke_app" )
+		AppCli::new( "ekke_app" )
 
 			.author ( crate_authors!() )
 			.version( crate_version!() )

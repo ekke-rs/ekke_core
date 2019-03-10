@@ -2,10 +2,23 @@
 //
 #![ feature( await_macro, async_await, futures_api, nll, stmt_expr_attributes, never_type ) ]
 
+
+pub type PinBoxFut<T> = std::pin::Pin<Box< dyn futures::future::Future< Output = T >>>;
+
+mod app;
 mod ekke;
 mod ekke_server;
 mod errors;
 mod config;
+
+
+pub use app::
+{
+	App,
+	FrontendRequest,
+	BackendResponse,
+	Status as ResponseStatus,
+};
 
 
 pub use ekke::
@@ -20,9 +33,11 @@ pub use ekke_server::
 	EkkeServer
 };
 
+
 use config::
 {
-	Settings
+	Settings  ,
+	AppConfig ,
 };
 
 
