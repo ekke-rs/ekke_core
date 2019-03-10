@@ -11,6 +11,10 @@ pub enum EkkeError
 {
 	#[ fail( display = "Bind to unix socket: Nobody connected to the socket" ) ]
 	//
-	NoConnectionsReceived
+	NoConnectionsReceived,
+
+	#[ fail( display = "Tried to register route twice, route: {}", _0 ) ]
+	//
+	DoubleRouteRegistration( String ),
 }
 

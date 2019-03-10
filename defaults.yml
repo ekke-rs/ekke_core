@@ -5,7 +5,5 @@ default:
     - name: systemd
       path: target/debug/ekke_systemd
 
-
-  router:
-
-    - index: mainui
+    - name: mainui
+      path: target/debug/ekke_main

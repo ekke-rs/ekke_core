@@ -10,7 +10,8 @@ mod config;
 
 pub use ekke::
 {
-	Ekke
+	Ekke,
+	RpcAddress,
 };
 
 
@@ -44,10 +45,12 @@ pub mod services
 
 
 
-use crate::services::*;
-use ekke_io::{ IpcMessage, Rpc };
-use actix::Recipient;
-
+use
+{
+	crate   :: { services::*      } ,
+	ekke_io :: { IpcMessage, Rpc  } ,
+	actix   :: { Recipient        } ,
+};
 
 pub(crate) fn service_map( rpc: &Rpc, msg: IpcMessage, ipc_peer: Recipient< IpcMessage > )
 {
@@ -57,3 +60,4 @@ pub(crate) fn service_map( rpc: &Rpc, msg: IpcMessage, ipc_peer: Recipient< IpcM
         _ =>(),
     }
 }
+

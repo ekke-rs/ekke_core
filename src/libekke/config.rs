@@ -1,7 +1,6 @@
 use serde       :: { Serialize, Deserialize } ;
 use std         :: { path::PathBuf          } ;
 
-
 #[ derive( Serialize, Deserialize, Debug, Clone ) ]
 //
 pub struct Settings
