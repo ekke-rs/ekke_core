@@ -1,18 +1,16 @@
 use std::
 {
 	  env
-	, process::Command
 	, str
 	, path::PathBuf
 	, sync::Arc
 	, convert::TryFrom
-	, pin::Pin
 };
 
 use actix             :: { prelude::*, registry::SystemService                            };
 use clap              :: { App, Arg, ArgMatches, crate_version, crate_authors             };
 use failure           :: { ResultExt as _                                                 };
-use futures_util      :: { future::FutureExt, try_future::TryFutureExt, future::join_all  };
+use futures_util      :: { future::FutureExt, try_future::TryFutureExt  };
 use parking_lot       :: { RwLock                                                         };
 use slog              :: { Logger, Drain, debug, info, o                                  };
 use slog_term         :: { TermDecorator, CompactFormat                                   };
@@ -25,32 +23,30 @@ use tokio_uds         :: { UnixStream, UnixListener                             
 
 use ekke_io::
 {
-	ConnID                ,
 	IpcMessage            ,
-	IpcPeer               ,
-	RegisterServiceMethod ,
+	IpcPeer ,
 	Rpc                   ,
 	ThreadLocalDrain      ,
 };
 
 use ekke_config::{ Config };
-use crate      ::{ EkkeError, Settings, EkkeServer };
+use crate      ::{ EkkeError, Settings };
 
 
 
-mod register_application;
+mod     register_application   ;
 pub use register_application::*;
 
 mod     rpc_address   ;
 pub use rpc_address::*;
 
-#[ derive( Clone, TypeName ) ]
+#[ derive( TypeName ) ]
 //
 pub struct Ekke
 {
-	pub log: Logger,
-	settings: Arc<RwLock< Config<Settings> >>,
+	log     : Logger                                ,
 	rpc     : Addr< Rpc >                           ,
+	settings: Arc< RwLock < Config<Settings>     >> ,
 }
 
 
@@ -66,7 +62,12 @@ impl Default for Ekke
 
 		let defaults = env::current_exe().unwraps( &log ).parent().unwrap().join( "../../ekke_core/defaults.yml" );
 
-		Ekke{ rpc, log: log.clone(), settings: Arc::new( RwLock::new( Config::try_from( &defaults ).unwraps( &log ) ) ) }
+		Ekke
+		{
+			settings: Arc::new( RwLock ::new(     Config::try_from( &defaults             ).unwraps( &log ) )),
+			log     ,
+			rpc     ,
+		}
 	}
 }
 
@@ -81,54 +82,11 @@ impl SystemService for Ekke
 	{
 		// println!( "{:#?}", *self.settings.read() );
 
-		let log = self.log.clone();
-
-		let rpc = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
-
-		// Register our services
-		//
-		self.register_service::<RegisterApplication>( &rpc, ctx );
-
-
-		// Launch an ipc peer for each child application
-		//
-		let apps = { self.settings.read().get().apps.clone() };
+		let log  = self.log.new( o!( "Actor" => "Ekke async block" ) );
 
 		let program = async move
 		{
 			info!( log, "Ekke Starting up" );
-
-			let tasks: Vec< Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> > > =
-
-			apps.iter().map( |app| -> Pin<Box< dyn std::future::Future< Output = Recipient< IpcMessage >>> >
-			{
-				dbg!( &app );
-
-				let addr = ConnID::new().hex();
-
-				Command::new( &app.path )
-
-					.arg( "--socket" )
-					.arg( &addr  )
-					.spawn()
-					.expect( "PeerA: failed to execute process" )
-
-				;
-
-				// We use abstract unix sockets.
-				//
-				let sock_addr = "\x00".to_string() + &addr;
-
-				info!( log, "Starting IpcPeer for {}", &app.name );
-
-				Self::peer( sock_addr, rpc.clone(), &log ).boxed()
-
-			}).collect();
-
-			let _recipients = await!( join_all( tasks ) );
-
-			let http = EkkeServer::new( log.new( o!( "Actor" => "EkkeServer" ) ) );
-			await!( http.run() );
 
 			Ok(())
 		};
@@ -136,8 +94,6 @@ impl SystemService for Ekke
 		Arbiter::spawn( program.boxed().compat() );
 	}
 }
-
-
 
 impl Ekke
 {
