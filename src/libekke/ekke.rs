@@ -9,18 +9,19 @@ use std::
 	, pin::Pin
 };
 
-use actix             :: { prelude::*, registry::SystemService                };
-use clap              :: { App, Arg, ArgMatches, crate_version, crate_authors };
-use failure           :: { ResultExt                                          };
+use actix             :: { prelude::*, registry::SystemService                            };
+use clap              :: { App, Arg, ArgMatches, crate_version, crate_authors             };
+use failure           :: { ResultExt as _                                                 };
 use futures_util      :: { future::FutureExt, try_future::TryFutureExt, future::join_all  };
-use parking_lot       :: { RwLock                                             };
-use slog              :: { Logger, Drain, debug, info, o                      };
-use slog_term         :: { TermDecorator, CompactFormat                       };
-use slog_async        :: { Async                                              };
-use typename          :: { TypeName                                           };
+use parking_lot       :: { RwLock                                                         };
+use slog              :: { Logger, Drain, debug, info, o                                  };
+use slog_term         :: { TermDecorator, CompactFormat                                   };
+use slog_async        :: { Async                                                          };
+use slog_unwraps      :: { ResultExt as _                                                 };
+use typename          :: { TypeName                                                       };
 
-use tokio_async_await :: { await, stream::StreamExt                           };
-use tokio_uds         :: { UnixStream, UnixListener                           };
+use tokio_async_await :: { await, stream::StreamExt                                       };
+use tokio_uds         :: { UnixStream, UnixListener                                       };
 
 use ekke_io::
 {
@@ -28,7 +29,6 @@ use ekke_io::
 	IpcMessage            ,
 	IpcPeer               ,
 	RegisterServiceMethod ,
-	ResultExtSlog         ,
 	Rpc                   ,
 	ThreadLocalDrain      ,
 };
