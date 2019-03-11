@@ -2,8 +2,8 @@ default:
 
   apps:
 
-    - name: systemd
-      path: target/debug/ekke_systemd
+    # - name: systemd
+    #   path: target/debug/ekke_systemd
 
     - name: mainui
       path: target/debug/ekke_main
