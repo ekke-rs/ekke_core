@@ -42,8 +42,6 @@ impl EkkeServer
 {
 	pub fn new( log: Logger, rpc: Addr<Rpc> ) -> Self
 	{
-		// TODO: build service_fn here, so we can put rpc in it withot sending that to ekke_io
-		//
 		let http = Rc::new( HttpServer::new( log.new( o!( "Actor" => "HttpServer" ) ), Box::new( Self::responder ), rpc.clone() ));
 
 		Self
@@ -76,11 +74,7 @@ impl EkkeServer
 
 	fn responder( req: Request<Body>, rpc: Addr<Rpc>, log: Logger ) -> ResponseFuture
 	{
-		// {
-		// 	dbg!( ROUTES.lock().keys() );
-		// }
-		//
-		// TODO: Just use string slice without last char if it's a slash
+		// We strip the trailing slash for route matching
 		//
 		let mut p = req.uri().path().to_string();
 		if p.ends_with( '/' ) { p.pop(); }
@@ -88,7 +82,7 @@ impl EkkeServer
 		let rpc = Arc::new( Mutex::new( rpc.recipient() ) );
 
 
-		// We have an app that registered this route. Send an IpcReqOut to the peer.
+		// We have an app that registered this route. Send an IpcRequestOut to the peer.
 		//
 		if let Some( ipc_peer ) = ROUTES.lock().get( &p )
 		{
@@ -168,7 +162,6 @@ impl EkkeServer
 					.body  ( Body::from( "404" )        )
 					.expect( "Cannot create hyper body" )
 			))
-
 		}
 	}
 }
