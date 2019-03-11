@@ -49,8 +49,8 @@ pub use rpc_address::*;
 pub struct Ekke
 {
 	pub log : Logger,
-	settings: Arc<RwLock< Config<Settings> >>,
 	rpc     : Addr< Rpc >                           ,
+	settings: Arc< RwLock < Config<Settings>     >> ,
 	apps    : Rc < RefCell< HashMap<String, App> >> ,
 	http    : Rc < RefCell< EkkeServer           >> ,
 }
@@ -62,12 +62,11 @@ impl Default for Ekke
 	fn default() -> Self
 	{
 		let log = Self::root_logger().new( o!( "thread_name" => "main", "Actor" => "Ekke" ) );
-		let rpc      = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 
 		debug!( &log, "Trying to read default config file" );
 
 		let defaults = env::current_exe().unwraps( &log ).parent().unwrap().join( "../../ekke_core/defaults.yml" );
-
+		let rpc      = Rpc::new( log.new( o!( "Actor" => "Rpc" ) ), crate::service_map ).start();
 		let serv_log = log.new( o!( "Actor" => "EkkeServer" ) );
 
 		Ekke

@@ -39,7 +39,6 @@ Main server component for ekke
 # TODO
 
 - clean up handler for RegisterApplication (error handling)
-- fix hyper example in async book
 - use tokio process to run code when child dies
 - implement debug for every public type
 - write derive macros for actix::Actor and actix::MessageResponse

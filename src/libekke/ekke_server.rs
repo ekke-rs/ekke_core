@@ -7,7 +7,7 @@ use
 	hyper        :: { Response, Request, Body, StatusCode            },
 	lazy_static  :: { lazy_static                                    },
 	parking_lot  :: { Mutex                                          },
-	slog         :: { Logger, o                                      },
+	slog         :: { Logger, o, error, info                         },
 	std          :: { net::SocketAddr, rc::Rc, sync::Arc             },
 	typename     :: { TypeName                                       },
 	tokio        :: { await },
@@ -74,7 +74,7 @@ impl EkkeServer
 	}
 
 
-	fn responder( req: Request<Body>, rpc: Addr<Rpc> ) -> ResponseFuture
+	fn responder( req: Request<Body>, rpc: Addr<Rpc>, log: Logger ) -> ResponseFuture
 	{
 		// {
 		// 	dbg!( ROUTES.lock().keys() );
@@ -86,6 +86,7 @@ impl EkkeServer
 		if p.ends_with( '/' ) { p.pop(); }
 
 		let rpc = Arc::new( Mutex::new( rpc.recipient() ) );
+
 
 		if let Some( ipc_peer ) = ROUTES.lock().get( &p )
 		{
@@ -122,6 +123,8 @@ impl EkkeServer
 				//
 				match response
 				{
+					// 200 - OK
+					//
 					Ok( r ) =>
 					{
 						let resp: BackendResponse = Rpc::deserialize( r.ipc_msg.payload ).expect( "failed to deserialize BackendResponse" );
@@ -131,11 +134,19 @@ impl EkkeServer
 						Ok( Response::builder().status( StatusCode::from( resp.status ) ).body( body ).expect( "Cannot create hyper body" ) )
 					}
 
+					// 501 - INTERNAL SERVER ERROR
+					//
 					Err( err ) =>
 					{
-						// TODO: log errors... for the moment we have no logger
-						//
-						Ok( Response::builder().status( StatusCode::INTERNAL_SERVER_ERROR ).body( Body::from( format!( "{}", err ) ) ).expect( "Cannot create hyper body" ) )
+						error!( log, "Internal Server Error: {}", &err );
+
+						Ok
+						(
+							Response::builder().status( StatusCode::INTERNAL_SERVER_ERROR )
+
+								.body  ( Body::from( format!("{}", &err) ) )
+								.expect( "Cannot create hyper body"        )
+						)
 					}
 				}
 
@@ -143,13 +154,22 @@ impl EkkeServer
 			};
 
 			return Box::pin( fut )
-
-			// Make a response
 		}
 
+		// 404 - FILE NOT FOUND
+		//
 		else
 		{
-			return Box::pin( ok( Response::builder().status( StatusCode::NOT_FOUND ).body( Body::from( "404" ) ).expect( "Cannot create hyper body" ) ) )
+			info!( log, "404: [{}]", req.uri(); "type" => "access" );
+
+			return Box::pin( ok
+			(
+				Response::builder()
+
+					.status( StatusCode::NOT_FOUND      )
+					.body  ( Body::from( "404" )        )
+					.expect( "Cannot create hyper body" )
+			))
 
 		}
 	}
