@@ -1,11 +1,5 @@
-use
-{
-	actix    :: { prelude::*             },
-	serde    :: { Serialize, Deserialize },
-	typename :: { *                      },
+use crate :: { import::* };
 
-   hyper    :: { StatusCode             },
-};
 
 /// Response sent by an application to it's frontend
 ///

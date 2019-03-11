@@ -10,8 +10,8 @@ cargo-features = [ "default-run" ]
 
 [lib]
 
-	name = "libekke"
-	path = "src/libekke/libekke.rs"
+	name = "ekke_core"
+	path = "src/ekke_core/lib.rs"
 
 
 [[bin]]

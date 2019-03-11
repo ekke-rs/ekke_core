@@ -2,7 +2,7 @@
 #![ feature( await_macro, async_await, futures_api, nll ) ]
 #![ warn(unused_extern_crates) ]
 
-use libekke    :: { Ekke                         };
+use ekke_core  :: { Ekke                         };
 use actix      :: { prelude::*                   };
 
 

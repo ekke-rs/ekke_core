@@ -1,40 +1,8 @@
-use std::
+use
 {
-	  env
-	, path::PathBuf
-	, sync::Arc
-	, rc::Rc
-	, cell::RefCell
-	, convert::TryFrom
+	crate   :: { import::*, App, EkkeServer, Settings },
+	ekke_io :: { RegisterServiceMethod                },
 };
-
-use actix             :: { prelude::*, registry::SystemService                          } ;
-use clap              :: { App as AppCli, Arg, ArgMatches, crate_version, crate_authors } ;
-use failure           :: { ResultExt as _                                               } ;
-use futures           :: { future::ok                                                   } ;
-use futures_util      :: { future::{ FutureExt, join_all }, try_future::TryFutureExt    } ;
-use hashbrown         :: { HashMap                                                      } ;
-use parking_lot       :: { RwLock                                                       } ;
-use slog              :: { Logger, Drain, debug, info, error, o                         } ;
-use slog_term         :: { TermDecorator, CompactFormat                                 } ;
-use slog_async        :: { Async                                                        } ;
-use slog_unwraps      :: { ResultExt as _                                               } ;
-use typename          :: { TypeName                                                     } ;
-
-use tokio_async_await :: { await                                                        } ;
-use tokio_uds         :: { UnixStream                                                   } ;
-
-use ekke_io::
-{
-	IpcPeer               ,
-	RegisterServiceMethod ,
-	Rpc                   ,
-	ThreadLocalDrain      ,
-};
-
-use ekke_config :: { Config                    } ;
-use crate       :: { Settings, EkkeServer, App } ;
-
 
 
 
@@ -180,7 +148,7 @@ impl Ekke
 
 		let sock_addr  = "\x00".to_string() + args.value_of( "socket" ).unwrap();
 
-		let connection = await!( UnixStream::connect( PathBuf::from( &sock_addr ) ) )
+		let connection = awaits!( UnixStream::connect( PathBuf::from( &sock_addr ) ) )
 
 			.context( "Failed to connect to socket" ).unwraps( &log );
 

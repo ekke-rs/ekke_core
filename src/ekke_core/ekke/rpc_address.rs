@@ -1,12 +1,5 @@
-use
-{
-	actix    :: { prelude::*             },
-	serde    :: { Serialize, Deserialize },
-	typename :: { *                      },
+use crate :: { import::*, Ekke };
 
-   ekke_io  :: { Rpc                    },
-   crate    :: { Ekke                   },
-};
 
 
 #[ derive( Debug, Clone, Serialize, Deserialize, Message, TypeName ) ] #[ rtype( result="Addr<Rpc>" ) ]

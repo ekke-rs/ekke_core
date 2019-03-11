@@ -1,10 +1,5 @@
-use typename          :: { TypeName                         } ;
-use actix             :: { prelude::*                       } ;
-use serde_derive      :: { Serialize, Deserialize           } ;
-use ekke_io           :: { IpcMessage, ConnID, MessageType  } ;
-use slog              :: { info, crit                       } ;
-use slog_unwraps      :: { ResultExt as _                   } ;
-use crate             :: { Ekke                             } ;
+use crate :: { import::*, Ekke };
+
 
 #[ derive( Debug, Clone, Serialize, Deserialize, Message, TypeName ) ] #[ rtype( result="IpcMessage" ) ]
 //

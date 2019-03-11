@@ -1,11 +1,5 @@
-use
-{
-	actix    :: { prelude::*             },
-	serde    :: { Serialize, Deserialize },
-	typename :: { *                      },
+use crate :: { import::* };
 
-   ekke_io  :: { IpcMessage, ConnID     },
-};
 
 
 /// The type apps will receive when frontends make requests.

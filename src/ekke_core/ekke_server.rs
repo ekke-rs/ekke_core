@@ -1,19 +1,4 @@
-use
-{
-	actix        :: { Addr, Recipient, Arbiter                       },
-	futures      :: { future::ok                                     },
-	futures_util :: { future::FutureExt, try_future::TryFutureExt    },
-	hashbrown    :: { HashMap                                        },
-	hyper        :: { Response, Request, Body, StatusCode            },
-	lazy_static  :: { lazy_static                                    },
-	parking_lot  :: { Mutex                                          },
-	slog         :: { Logger, o, error, info, trace, warn            },
-	std          :: { net::SocketAddr, rc::Rc, sync::Arc             },
-	typename     :: { TypeName                                       },
-	tokio        :: { await },
-	ekke_io      :: { HttpServer, ResponseFuture, Rpc, IpcMessage, IpcRequestOut, MessageType, ConnID    },
-	crate        :: { EkkeResult, EkkeError, FrontendRequest, BackendResponse                          },
-};
+use crate :: { import::*, FrontendRequest, BackendResponse, EkkeError, EkkeResult };
 
 
 // TODO: this will be consulted for every http request, try to do better than mutex
@@ -108,7 +93,7 @@ impl EkkeServer
 					conn_id                   ,
 				);
 
-				let response = await!( rpc.clone().lock().send
+				let response = awaits!( rpc.clone().lock().send
 				(
 					IpcRequestOut{ ipc_peer: peer, ipc_msg }
 

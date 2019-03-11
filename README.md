@@ -18,6 +18,7 @@ Main server component for ekke
   - visually recognisable hashes: snowhash?
   - unique ids: for now 128bit number from rand::Rng
   - process tracking: tokio_process
+  - for http traffic use content adressable ressources and cache-control: immutable (https://code.fb.com/web/this-browser-tweak-saved-60-of-requests-to-facebook/)
 
 ## Spare tools (not used yet)
 

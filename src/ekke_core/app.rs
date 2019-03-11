@@ -1,17 +1,5 @@
-use
-{
-	actix             :: { Actor, Addr, AsyncContext, Context, Recipient         } ,
-	failure           :: { ResultExt                                             } ,
-	std               :: { fmt, path::PathBuf, process::Command                  } ,
-	slog              :: { Logger, debug, info, o                                } ,
-	slog_unwraps      :: { ResultExt as _                                        } ,
+use crate :: { import::*, services::RegisterApplication, AppConfig, EkkeError, EkkeResult };
 
-	tokio_uds         :: { UnixStream, UnixListener                              } ,
-	tokio_async_await :: { await, stream::StreamExt                              } ,
-
-	ekke_io           :: { ConnID, IpcMessage, IpcPeer, Rpc                      } ,
-	crate             :: { AppConfig, EkkeResult, EkkeError, RegisterApplication } ,
-};
 
 mod frontend_request;
 mod backend_response;

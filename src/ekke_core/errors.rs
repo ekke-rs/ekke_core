@@ -1,5 +1,4 @@
-use failure:: *                                    ;
-
+use crate :: { import::* };
 
 
 pub type EkkeResult<T> = std::result::Result<T, failure::Error>;
