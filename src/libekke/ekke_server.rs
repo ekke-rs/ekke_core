@@ -11,7 +11,7 @@ use
 	std          :: { net::SocketAddr, rc::Rc, sync::Arc             },
 	typename     :: { TypeName                                       },
 	tokio        :: { await },
-	ekke_io      :: { HttpServer, ResponseFuture, Rpc, IpcMessage, SendRequest, MessageType, ConnID    },
+	ekke_io      :: { HttpServer, ResponseFuture, Rpc, IpcMessage, IpcRequestOut, MessageType, ConnID    },
 	crate        :: { EkkeResult, EkkeError, FrontendRequest, BackendResponse                          },
 };
 
@@ -88,11 +88,13 @@ impl EkkeServer
 		let rpc = Arc::new( Mutex::new( rpc.recipient() ) );
 
 
+		// We have an app that registered this route. Send an IpcReqOut to the peer.
+		//
 		if let Some( ipc_peer ) = ROUTES.lock().get( &p )
 		{
 			let peer = ipc_peer.clone();
 
-			let fut  = async move
+			let fut = async move
 			{
 				let ipc_msg = IpcMessage::new
 				(
@@ -104,17 +106,13 @@ impl EkkeServer
 						payload: Vec::new(),
 					},
 
-					MessageType::SendRequest,
-					ConnID::new()
+					MessageType::IpcRequestOut,
+					ConnID::new()           ,
 				);
 
 				let response = await!( rpc.clone().lock().send
 				(
-					SendRequest
-					{
-						ipc_peer: peer,
-						ipc_msg       ,
-					}
+					IpcRequestOut{ ipc_peer: peer, ipc_msg }
 
 				)).expect( "Send from ekkeserver to application" );
 
