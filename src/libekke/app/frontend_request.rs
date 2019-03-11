@@ -4,7 +4,7 @@ use
 	serde    :: { Serialize, Deserialize },
 	typename :: { *                      },
 
-   ekke_io  :: { IpcMessage             },
+   ekke_io  :: { IpcMessage, ConnID     },
 };
 
 
@@ -14,6 +14,7 @@ use
 //
 pub struct FrontendRequest
 {
+	pub conn_id : ConnID ,
 	pub path    : String ,
 	pub payload : Vec<u8>,
 }

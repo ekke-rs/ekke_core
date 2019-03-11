@@ -7,7 +7,7 @@ use
 	hyper        :: { Response, Request, Body, StatusCode            },
 	lazy_static  :: { lazy_static                                    },
 	parking_lot  :: { Mutex                                          },
-	slog         :: { Logger, o, error, info                         },
+	slog         :: { Logger, o, error, info, trace, warn            },
 	std          :: { net::SocketAddr, rc::Rc, sync::Arc             },
 	typename     :: { TypeName                                       },
 	tokio        :: { await },
@@ -74,6 +74,8 @@ impl EkkeServer
 
 	fn responder( req: Request<Body>, rpc: Addr<Rpc>, log: Logger ) -> ResponseFuture
 	{
+		warn!( &log, "Start http processing: {}", req.uri(); "type" => "profile" );
+
 		// We strip the trailing slash for route matching
 		//
 		let mut p = req.uri().path().to_string();
@@ -90,6 +92,7 @@ impl EkkeServer
 
 			let fut = async move
 			{
+				let conn_id = ConnID::new();
 				let ipc_msg = IpcMessage::new
 				(
 					"FrontendRequest".to_string(),
@@ -98,10 +101,11 @@ impl EkkeServer
 					{
 						path: p,
 						payload: Vec::new(),
+						conn_id: conn_id,
 					},
 
 					MessageType::IpcRequestOut,
-					ConnID::new()           ,
+					conn_id                   ,
 				);
 
 				let response = await!( rpc.clone().lock().send
@@ -122,6 +126,9 @@ impl EkkeServer
 						let resp: BackendResponse = Rpc::deserialize( r.ipc_msg.payload ).expect( "failed to deserialize BackendResponse" );
 
 						let body = Body::from( resp.body );
+
+						warn!( &log, "Stop http processing: {}", req.uri(); "type" => "profile" );
+
 
 						Ok( Response::builder().status( StatusCode::from( resp.status ) ).body( body ).expect( "Cannot create hyper body" ) )
 					}
