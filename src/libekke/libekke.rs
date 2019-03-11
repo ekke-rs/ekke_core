@@ -7,7 +7,7 @@ pub type PinBoxFut<T> = std::pin::Pin<Box< dyn futures::future::Future< Output =
 
 mod app;
 mod ekke;
-// mod ekke_server;
+mod ekke_server;
 mod errors;
 mod config;
 
@@ -28,10 +28,10 @@ pub use ekke::
 };
 
 
-// pub use ekke_server::
-// {
-// 	EkkeServer
-// };
+pub use ekke_server::
+{
+	EkkeServer
+};
 
 
 use config::
@@ -57,22 +57,20 @@ pub mod services
 
 
 
-
-
-
 use
 {
 	crate   :: { services::*      } ,
 	ekke_io :: { IpcMessage, Rpc  } ,
 	actix   :: { Recipient        } ,
+	slog    :: { Logger, error    } ,
 };
 
-pub(crate) fn service_map( rpc: &Rpc, msg: IpcMessage, ipc_peer: Recipient< IpcMessage > )
+
+pub(crate) fn service_map( rpc: &Rpc, log: Logger, msg: IpcMessage, ipc_peer: Recipient< IpcMessage > )
 {
     match msg.service.as_ref()
     {
         "RegisterApplication" => rpc.deser_into::<RegisterApplication>( msg, ipc_peer ),
-        _ =>(),
+        _                     => error!( &log, "MainUi: Received request for unknown service: {}", &msg.service ),
     }
 }
-

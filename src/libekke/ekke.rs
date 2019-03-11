@@ -33,7 +33,7 @@ use ekke_io::
 };
 
 use ekke_config :: { Config                    } ;
-use crate       :: { Settings, /*EkkeServer,*/ App } ;
+use crate       :: { Settings, EkkeServer, App } ;
 
 
 
@@ -52,7 +52,7 @@ pub struct Ekke
 	settings: Arc<RwLock< Config<Settings> >>,
 	rpc     : Addr< Rpc >                           ,
 	apps    : Rc < RefCell< HashMap<String, App> >> ,
-	// http    : Rc < RefCell< EkkeServer           >> ,
+	http    : Rc < RefCell< EkkeServer           >> ,
 }
 
 
@@ -68,13 +68,13 @@ impl Default for Ekke
 
 		let defaults = env::current_exe().unwraps( &log ).parent().unwrap().join( "../../ekke_core/defaults.yml" );
 
-		// let _serv_log = log.new( o!( "Actor" => "EkkeServer" ) );
+		let serv_log = log.new( o!( "Actor" => "EkkeServer" ) );
 
 		Ekke
 		{
 			settings: Arc::new( RwLock ::new(     Config::try_from( &defaults             ).unwraps( &log ) )),
 			apps    : Rc ::new( RefCell::new(    HashMap::new     (                       )                 )),
-			// http    : Rc ::new( RefCell::new( EkkeServer::new     ( serv_log, rpc.clone() )                 )),
+			http    : Rc ::new( RefCell::new( EkkeServer::new     ( serv_log, rpc.clone() )                 )),
 			log     ,
 			rpc     ,
 		}
@@ -94,8 +94,9 @@ impl SystemService for Ekke
 
 		let log  = self.log.new( o!( "Actor" => "Ekke async block" ) );
 		let rpc  = self.rpc .clone();
-		// let _http = self.http.clone();
+		let http = self.http.clone();
 		let apps = self.apps.clone();
+
 		// Register our services
 		//
 		self.register_service::<RegisterApplication>( &rpc, ctx );
@@ -149,9 +150,9 @@ impl SystemService for Ekke
 			// then as long as we are single threaded, this should not happen, as there is no
 			// yield point (no awaits) within this block.
 			//
-/*			{
+			{
 				http.borrow().run();
-			}*/
+			}
 
 			Ok(())
 		};

@@ -117,11 +117,29 @@ impl EkkeServer
 
 				)).expect( "Send from ekkeserver to application" );
 
-				let resp: BackendResponse = Rpc::deserialize( response.ipc_msg.payload ).expect( "failed to deserialize BackendResponse" );
 
-				let body = Body::from( resp.body );
+				// An ipc error might happen, -> internal server error, with error message as body
+				//
+				match response
+				{
+					Ok( r ) =>
+					{
+						let resp: BackendResponse = Rpc::deserialize( r.ipc_msg.payload ).expect( "failed to deserialize BackendResponse" );
 
-				Ok( Response::builder().status( StatusCode::from( resp.status ) ).body( body ).expect( "Cannot create hyper body" ) )
+						let body = Body::from( resp.body );
+
+						Ok( Response::builder().status( StatusCode::from( resp.status ) ).body( body ).expect( "Cannot create hyper body" ) )
+					}
+
+					Err( err ) =>
+					{
+						// TODO: log errors... for the moment we have no logger
+						//
+						Ok( Response::builder().status( StatusCode::INTERNAL_SERVER_ERROR ).body( Body::from( format!( "{}", err ) ) ).expect( "Cannot create hyper body" ) )
+					}
+				}
+
+
 			};
 
 			return Box::pin( fut )
@@ -134,42 +152,6 @@ impl EkkeServer
 			return Box::pin( ok( Response::builder().status( StatusCode::NOT_FOUND ).body( Body::from( "404" ) ).expect( "Cannot create hyper body" ) ) )
 
 		}
-
-		// Box::pin( async move
-		// {
-		//
-
-		// 	let body = if let Some( ipc_peer ) = option
-		// 	{
-		// 		let ipc_msg = IpcMessage::new( p, "", MessageType::SendRequest, ConnID::new() );
-
-		// 		let response = await!( rpc.clone().lock().send
-		// 		(
-		// 			SendRequest
-		// 			{
-		// 				ipc_peer: ipc_peer.lock().clone() ,
-		// 				ipc_msg  ,
-		// 			}
-
-		// 		)).expect( "Send from ekkeserver to application" );
-
-		// 		Body::from
-		// 		(
-		// 			"bla"
-		// 		)
-		// 	}
-
-		// 	else
-		// 	{
-		// 		Body::from( "404" )
-		// 	};
-
-		// 	Ok( Response::builder().status( StatusCode::NOT_FOUND ).body( body ).expect( "Cannot create hyper body" ) )
-
-		// } )
 	}
-
-
-
 }
 
