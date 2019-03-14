@@ -20,10 +20,10 @@
 
 [dependencies]
 
-	ekke_io              = { path = "../ekke_io"    , features = [ "http_server" ] }
-	ekke_config          = { path = "../ekke_config"                               }
+	ekke_io              = { path = "../ekke_io"    , features = [ "http_server", "tokio-rt" ] }
+	ekke_config          = { path = "../ekke_config"                                           }
 
-	actix                = "0.7.9"
+	actix                = { path = "../../actix", features = [ "tokio" ] }
 	clap                 = "2.32.0"
 	failure              = "0.1.5"
 
