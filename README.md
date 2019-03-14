@@ -19,6 +19,9 @@ Main server component for ekke
   - unique ids: for now 128bit number from rand::Rng
   - process tracking: tokio_process
   - for http traffic use content adressable ressources and cache-control: immutable (https://code.fb.com/web/this-browser-tweak-saved-60-of-requests-to-facebook/)
+  - derive_more for extra derives (display, add, ...)
+  - wasm: wasm-bindgen, wasm-bindgen-futures
+
 
 ## Spare tools (not used yet)
 
@@ -36,6 +39,13 @@ Main server component for ekke
   - Crate compact -> used in kay to send actor messages over network boundaries
   - methods for getting a global log pointer without mutex: https://unhandledexpression.com/general/2017/08/23/adventures-in-logging.html
   - a global slog!: https://stackoverflow.com/questions/47342036/why-doesnt-a-lazy-static-sloglogger-print-until-a-non-static-logger-is-used
+  - templating, look at yarte?
+  - validation: validator crate
+  - parallelization: rayon
+  - web animations: Tweek/Tween
+  - error handling, look at: https://epage.github.io/blog/2018/03/redefining-failure/
+  - CSS look into SUIT vs BEM vs ???
+  - web ui: google reference impls: https://googlechromelabs.github.io/ui-element-samples/
 
 # TODO
 
@@ -84,6 +94,8 @@ Search is elimination! Show hints to the user of what they can type to eliminate
 Use bold and color to show the user where the letters they have already typed show up in the top results and show them
 what letters they might type to cut it down asap.
 
+trigger focus searchbar by single control or alt key?
+
 As soon as search bar takes focus:
 - Seed the elimination by offering broad categories:
   - filesystem -> y
@@ -98,13 +110,35 @@ As soon as search bar takes focus:
 - next level (filesystem example):
   -
 
+## Sub commands
+
+Filter already returned results by a subsearch, or issue a command without changing context, ctrl+enter to open a second search bar whilst keeping the first one...
+
+
+## commands as tags
+
+the way to talk to the programs is by issuing commands. Command suggestions have high priority while returning search results and shall be shown above other suggestions. A number of general commands shall be common to all programs integrated in ekke and it shall be listed in documentation:
+- login ? -> not sure actually, some apps might not have users
+- logout ? -> not sure actually, some apps might not have users
+- `name` things -> eg. a sudoku game you played, you can give it a name
+- `notes` add notes to things
+- `offline` make stuff available offline
+- `identity`
+- `hide` to liberate screen space
+
+Commands have their own  suggestions. Once a command is selected, it suggests further info it needs to execute.
+
+
 ## Non-linear text
 Just as tag based file browser is about having more ways to get to something and to group things than just directory hierarchy, we can also navicate text (guides, docs, tutorials) in a non-linear fashion. With breadcrumb trails, maybe with allowing to choose starting points (im a dev, im a user, I have intermediate exp with the topics), and end goals (I would like to get this done).
 
 ### Visualisation
 - Nice breadcrumbs view: https://www.howtographql.com/
-
 # Project management
+
+## Abstract out over services
+While thinking on what might be a successful model for recreating things that exist already, it's by having the best interface, but support all. Play go online, fine, seamlessly combine your accounts on kgs, ogs, igs, ... local play against leela, analysis by leela, ... all in one interface.
+chat: combine whatsapp, tox, matrix, irc, jabber, signal. Just let you setup accounts for all of these services
 
 ## Issue and pull request labels
 
