@@ -24,33 +24,33 @@ dependencies:
   ekke_config         : { path: ../ekke_config                                      }
 
   actix               : { path: ../../actix, features: [ tokio ] }
-  clap                : 2.32.0
-  failure             : 0.1.5
+  clap                : ^2
+  failure             : ^0.1
 
-  futures-preview     : 0.3.0-alpha.13
-  futures-util-preview: 0.3.0-alpha.13
-  futures-locks       : 0.3.3
+  futures-preview     : ^0.3.0-alpha.13
+  futures-util-preview: ^0.3.0-alpha.13
+  futures-locks       : ^0.3
 
-  hashbrown           : { version: 0.1.8  , features: [nightly] }
-  hyper               : { version: 0.12.25 }
-  lazy_static         : 1.2.0
-  parking_lot         : 0.7.1
-  state               : 0.4.1
-  typename            : 0.1.0
+  hashbrown           : { version: ^0.1  , features: [nightly] }
+  hyper               : { version: ^0.12 }
+  lazy_static         : ^1.2
+  parking_lot         : ^0.7
+  state               : ^0.4
+  typename            : ^0.1
 
-  serde               : 1.0.87
-  serde_derive        : 1.0.87
-  serde_cbor          : 0.9.0
+  serde               : ^1
+  serde_derive        : ^1
+  serde_cbor          : ^0.9
 
-  slog                : { version: ~2.4.1, features: [ max_level_trace, release_max_level_debug ] }
-  slog-async          : 2.3.0
-  slog-term           : 2.4.0
-  slog_unwraps        : 0.1.5
-  log-panics          : 2.0.0
+  slog                : { version: ^2, features: [ max_level_trace, release_max_level_debug ] }
+  slog-async          : ^2
+  slog-term           : ^2
+  slog_unwraps        : ^0.1
+  log-panics          : ^2
 
-  tokio               : { version: ~0.1.15, features: [async-await-preview] }
-  tokio-async-await   : 0.1.5
-  tokio-uds           : 0.2.5
+  tokio               : { version: ^0.1, features: [async-await-preview] }
+  tokio-async-await   : ^0.1
+  tokio-uds           : ^0.2
 
 
 

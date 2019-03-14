@@ -4,24 +4,24 @@ name = "ekke"
 path = "src/main.rs"
 
 [dependencies]
-clap = "2.32.0"
-failure = "0.1.5"
-futures-locks = "0.3.3"
-futures-preview = "0.3.0-alpha.13"
-futures-util-preview = "0.3.0-alpha.13"
-lazy_static = "1.2.0"
-log-panics = "2.0.0"
-parking_lot = "0.7.1"
-serde = "1.0.87"
-serde_cbor = "0.9.0"
-serde_derive = "1.0.87"
-slog-async = "2.3.0"
-slog-term = "2.4.0"
-slog_unwraps = "0.1.5"
-state = "0.4.1"
-tokio-async-await = "0.1.5"
-tokio-uds = "0.2.5"
-typename = "0.1.0"
+clap = "^2"
+failure = "^0.1"
+futures-locks = "^0.3"
+futures-preview = "^0.3.0-alpha.13"
+futures-util-preview = "^0.3.0-alpha.13"
+lazy_static = "^1.2"
+log-panics = "^2"
+parking_lot = "^0.7"
+serde = "^1"
+serde_cbor = "^0.9"
+serde_derive = "^1"
+slog-async = "^2"
+slog-term = "^2"
+slog_unwraps = "^0.1"
+state = "^0.4"
+tokio-async-await = "^0.1"
+tokio-uds = "^0.2"
+typename = "^0.1"
 
 [dependencies.actix]
 features = ["tokio"]
@@ -36,18 +36,18 @@ path = "../ekke_io"
 
 [dependencies.hashbrown]
 features = ["nightly"]
-version = "0.1.8"
+version = "^0.1"
 
 [dependencies.hyper]
-version = "0.12.25"
+version = "^0.12"
 
 [dependencies.slog]
 features = ["max_level_trace", "release_max_level_debug"]
-version = "~2.4.1"
+version = "^2"
 
 [dependencies.tokio]
 features = ["async-await-preview"]
-version = "~0.1.15"
+version = "^0.1"
 
 [lib]
 name = "ekke_core"

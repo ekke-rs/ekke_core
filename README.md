@@ -46,6 +46,7 @@ Main server component for ekke
   - error handling, look at: https://epage.github.io/blog/2018/03/redefining-failure/
   - CSS look into SUIT vs BEM vs ???
   - web ui: google reference impls: https://googlechromelabs.github.io/ui-element-samples/
+  - catflap and cargo watch for autoreloading
 
 # TODO
 
