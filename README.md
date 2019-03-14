@@ -47,6 +47,11 @@ Main server component for ekke
   - CSS look into SUIT vs BEM vs ???
   - web ui: google reference impls: https://googlechromelabs.github.io/ui-element-samples/
   - catflap and cargo watch for autoreloading
+  - tokio-trace potentially better logging than slog!
+  - grpc: maybe better than hand rolled ipc? also for logging btw
+  - genome browser in wasm: http://2020.ensembl.org/app/browser/GRCh38_demo/ENSG00000139618?region=13:32196775-32543698
+  - https://docs.rs/newtype_derive/0.1.6/newtype_derive/ lets you create transparent new type with deref...
+  - lagom: microservices with actors, maybe look for inspiration: https://www.lagomframework.com/
 
 # TODO
 
@@ -129,73 +134,33 @@ the way to talk to the programs is by issuing commands. Command suggestions have
 
 Commands have their own  suggestions. Once a command is selected, it suggests further info it needs to execute.
 
+### standard interactions
+There should be commands that are generic over user interfaces. Eg. UI elements can implement traits and traits can be mapped to commands that can be send with the input bar (need a better name, candy bar?). Eg, plenty of things might implement Filter trait. A table with rows, a list with elements, a text with sentences... A Copy trait, files, clipboard, ...
+
 
 ## Non-linear text
 Just as tag based file browser is about having more ways to get to something and to group things than just directory hierarchy, we can also navicate text (guides, docs, tutorials) in a non-linear fashion. With breadcrumb trails, maybe with allowing to choose starting points (im a dev, im a user, I have intermediate exp with the topics), and end goals (I would like to get this done).
 
 ### Visualisation
 - Nice breadcrumbs view: https://www.howtographql.com/
-# Project management
+- snowhash
 
 ## Abstract out over services
 While thinking on what might be a successful model for recreating things that exist already, it's by having the best interface, but support all. Play go online, fine, seamlessly combine your accounts on kgs, ogs, igs, ... local play against leela, analysis by leela, ... all in one interface.
 chat: combine whatsapp, tox, matrix, irc, jabber, signal. Just let you setup accounts for all of these services
 
-## Issue and pull request labels
 
-Type:
-  - problem
-  - improvement
-  - feature
-  - question
-  - feedback
+## Security & Privacy
 
-Nature:
-Nature ⦔ Broken
-Nature ⦔ Security
-Nature ⦔ Performance
-Nature ⦔ Usability
-Nature ⦔ Cosmetics
+For sending messages to one another, applications need to know each others address in order to communicate. It's a bit like sandstorm, but we haven't though about sandboxing yet. In any case a good user interface should exist for the user to define which apps can communicate to which. a visualisation network would be nice.
+
+Applications could reuse the graphical component for identities. Eg, an email/chat client could have a different db for each identity, and could keep information from leaking between accounts (the thing that thunderbird fails to do) and then reuse the nice graphical component for visualizing and letting the user edit permissions of interaction. Another way would be to instantiate one subprocess per identity, but merge the user interface somehow.
+
+### Firewall
+
+Possibility to put all apps in network namespaces and only allow internet connection if configured in firewall app?
 
 
-Priority:
-Priority ⦔ Critical
-Priority ⦔ High
-Priority ⦔ Normal
-Priority ⦔ Low
-Priority ⦔ Perfectionist
+### Logviewer ideas
 
-
-Est. Work:
-Est. Work ⦔ 1h
-Est. Work ⦔ 3h
-Est. Work ⦔ 1d
-Est. Work ⦔ 2d
-Est. Work ⦔ 3d
-Est. Work ⦔ 4d
-Est. Work ⦔ 1w
-Est. Work ⦔ 2w
-Est. Work ⦔ 3w
-Est. Work ⦔ 1m
-Est. Work ⦔ 1m+
-
-
-Platform:
-Platform ⦔ Linux
-Platform ⦔ Mac
-Platform ⦔ Windows
-Platform ⦔ Bsd
-Platform ⦔ Android
-
-
-Difficulty:
-Difficulty ⦔ Research
-Difficulty ⦔ Software Design
-Difficulty ⦔ Impl Hard
-Difficulty ⦔ Impl Intermediate
-Difficulty ⦔ Impl Easy
-Difficulty ⦔ Mindless Chore
-
-Affects:
-⦔ One Crate
-⦔ Several Crate
+Everything that has a timeline should implement zoom
