@@ -15,9 +15,9 @@ fn main()
 {
 	let sys = System::new( "Ekke Server" );
 
-	let _app: Addr< Ekke > = SystemService::start_service( &Arbiter::new( "Ekke Server") );
+	let _app: Addr< Ekke > = SystemService::start_service( &Arbiter::new() );
 
-	sys.run();
+	sys.run().expect( "Failed to run actix::System");
 }
 
 
