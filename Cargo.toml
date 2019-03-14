@@ -1,12 +1,10 @@
-cargo-features = [ "default-run" ]
-
 [package]
 
-	name    = "ekke_core"
-	version = "0.1.0"
-	authors = [ "Naja Melan <najamelan@autistici.org>" ]
-	edition = "2018"
-	default-run = "ekke"
+	name        = "ekke_core"
+	version     = "0.1.0"
+	authors     = [ "Naja Melan <najamelan@autistici.org>" ]
+	edition     = "2018"
+
 
 [lib]
 
